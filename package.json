@@ -1,0 +1,83 @@
+{
+  "name": "codex-usage-pet",
+  "version": "0.1.0",
+  "description": "A privacy-preserving Codex desktop pet and phone notification companion.",
+  "author": "Adie",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "build:app": "node scripts/build.mjs",
+    "start": "npm run build:app && electron .",
+    "test": "node --import tsx --test tests/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm test && npm run build:app",
+    "dist:win": "npm run check && electron-builder --win nsis portable"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "electron": "^41.0.2",
+    "electron-builder": "^26.8.1",
+    "esbuild": "^0.25.11",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3"
+  },
+  "build": {
+    "appId": "com.adie.usagepet",
+    "productName": "Usage Pet",
+    "copyright": "Copyright © 2026 Adie",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "hooks",
+        "to": "hooks"
+      },
+      {
+        "from": "assets/pets",
+        "to": "pets"
+      },
+      {
+        "from": "assets/icon.png",
+        "to": "icon.png"
+      }
+    ],
+    "asar": true,
+    "win": {
+      "icon": "assets/icon.png",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "signExecutable": false
+    },
+    "nsis": {
+      "artifactName": "Usage-Pet-Setup-${version}-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Usage-Pet-Portable-${version}-${arch}.${ext}"
+    }
+  }
+}

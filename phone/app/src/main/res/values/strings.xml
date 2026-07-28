@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Codex Usage Pet on Phone</string>
+    <string name="screen_title">Codex Usage Pet</string>
+    <string name="notification_channel_name">Codex 任务提醒</string>
+    <string name="notification_channel_description">Codex 任务完成时发出声音和振动</string>
+    <string name="notification_quiet_channel_name">Codex 任务状态</string>
+    <string name="notification_quiet_channel_description">Codex 任务状态的静默更新</string>
+    <string name="notification_tasks_heading">Codex 任务</string>
+    <string name="notification_content_count">%1$d 条任务</string>
+    <string name="notification_task_count">%1$d 条</string>
+    <string name="usage_percent_mark">%</string>
+    <string name="usage_reset_month_unit">月</string>
+    <string name="usage_reset_day_unit">日</string>
+    <string name="usage_running_label">运行</string>
+    <string name="usage_completed_label">完成</string>
+    <string name="task_state_running">运行中</string>
+    <string name="task_state_review">待查看</string>
+    <string name="task_state_waiting">待输入</string>
+    <string name="task_state_failed">失败</string>
+    <string name="usage_waiting_for_sync">等待同步</string>
+    <string name="pairing_title">连接电脑</string>
+    <string name="pairing_hint">粘贴 Usage Pet 生成的配对代码</string>
+    <string name="pairing_connect">连接</string>
+    <string name="pairing_confirm_title">连接这台电脑？</string>
+    <string name="pairing_confirm_message">仅当这个配对代码刚由你自己的 Usage Pet 生成时继续。</string>
+    <string name="pairing_disconnect">断开连接</string>
+    <string name="pairing_invalid">配对代码无效</string>
+    <string name="pairing_saved">已保存配对，正在连接</string>
+    <string name="pairing_disconnected">已断开并清除本机配对</string>
+    <string name="sync_status">同步状态：%1$s</string>
+    <string name="sync_connected">已连接</string>
+    <string name="sync_connecting">连接中</string>
+    <string name="sync_offline">已离线，正在重试</string>
+    <string name="sync_desktop_stale">已连接，电脑状态暂未更新</string>
+    <string name="sync_unpaired">尚未配对</string>
+    <string name="sync_auth_failed">配对认证失败</string>
+    <string name="status_permission_granted">通知权限已开启</string>
+    <string name="status_permission_denied">通知权限未开启，任务通知暂时无法显示</string>
+</resources>

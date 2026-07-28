@@ -1,0 +1,10 @@
+node_modules/
+dist/
+release/
+coverage/
+.tmp/
+.playwright/
+.playwright-cli/
+output/
+*.log
+design-qa-*.png

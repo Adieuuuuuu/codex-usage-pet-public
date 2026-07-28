@@ -1,0 +1,23 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "codex-phone-private-relay",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-28",
+  "observability": {
+    "enabled": false
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "CODEX_PHONE_ROOMS",
+        "class_name": "CodexPhoneRoom"
+      }
+    ]
+  },
+  "exports": {
+    "CodexPhoneRoom": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    }
+  }
+}

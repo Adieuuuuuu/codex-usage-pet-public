@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="usage_text_primary">#F1F2EF</color>
+    <color name="usage_text_secondary">#A5AAA7</color>
+    <color name="usage_surface">#F51D1F1E</color>
+    <color name="usage_surface_strong">#FA272928</color>
+    <color name="usage_line">#1FF5F7F4</color>
+    <color name="usage_green">#58BA79</color>
+    <color name="usage_blue">#77A7C9</color>
+    <color name="usage_progress_track">#21F5F7F4</color>
+    <color name="usage_progress_fill">#EBF5F7F4</color>
+</resources>

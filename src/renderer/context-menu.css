@@ -1,0 +1,145 @@
+:root {
+  font-family:
+    "Segoe UI Variable", "Segoe UI", "Microsoft YaHei", "PingFang SC",
+    sans-serif;
+  color: #252728;
+  color-scheme: light dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: transparent;
+}
+
+body {
+  padding: 10px;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+button {
+  font: inherit;
+}
+
+.menu-shell {
+  width: 100%;
+  height: 100%;
+  padding: 7px;
+  overflow: hidden;
+  background: rgba(252, 252, 250, 0.98);
+  border: 1px solid rgba(31, 34, 35, 0.14);
+  border-radius: 12px;
+  box-shadow: none;
+}
+
+.menu-view {
+  width: 100%;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 32px;
+  padding: 0 11px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  outline: 0;
+}
+
+.menu-item:hover,
+.menu-item:focus-visible {
+  background: rgba(31, 34, 35, 0.08);
+}
+
+.menu-item:active {
+  background: rgba(31, 34, 35, 0.12);
+}
+
+.menu-item:disabled {
+  color: rgba(37, 39, 40, 0.38);
+}
+
+.menu-item kbd,
+.chevron {
+  margin-left: auto;
+  color: rgba(37, 39, 40, 0.62);
+  font: inherit;
+}
+
+.chevron {
+  font-size: 19px;
+  line-height: 1;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 5px 7px;
+  background: rgba(31, 34, 35, 0.12);
+}
+
+.check {
+  width: 18px;
+  margin-left: -3px;
+  flex: 0 0 18px;
+}
+
+.check[data-checked="true"]::before {
+  content: "✓";
+}
+
+.menu-heading {
+  font-weight: 600;
+}
+
+.back {
+  width: 18px;
+  margin-left: -3px;
+  font-size: 19px;
+  line-height: 1;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #f0f1ef;
+  }
+
+  .menu-shell {
+    background: rgba(31, 31, 31, 0.985);
+    border-color: rgba(255, 255, 255, 0.14);
+    box-shadow: none;
+  }
+
+  .menu-item:hover,
+  .menu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.1);
+  }
+
+  .menu-item:active {
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .menu-item:disabled {
+    color: rgba(240, 241, 239, 0.38);
+  }
+
+  .menu-item kbd,
+  .chevron {
+    color: rgba(240, 241, 239, 0.64);
+  }
+
+  .menu-separator {
+    background: rgba(255, 255, 255, 0.14);
+  }
+}

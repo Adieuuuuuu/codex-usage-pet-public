@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'self' usagepet: data:; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Usage Pet</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <section id="surface" class="surface" aria-label="Codex 桌宠">
+        <div id="main-row" class="main-row">
+          <div id="pet-zone" class="pet-zone">
+            <div id="pet-frame" class="pet-frame" aria-hidden="true">
+              <img id="pet-atlas" class="pet-atlas" alt="" draggable="false" />
+            </div>
+          </div>
+
+          <button
+            id="usage-capsule"
+            class="usage-capsule interactive"
+            type="button"
+            aria-controls="task-panel"
+            aria-expanded="false"
+          >
+            <span class="usage-primary">
+              <svg
+                id="remaining-progress"
+                class="usage-ring"
+                viewBox="0 0 52 52"
+                role="progressbar"
+                aria-label="周用量剩余百分比"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+              >
+                <circle
+                  class="usage-ring-track"
+                  cx="26"
+                  cy="26"
+                  r="22"
+                  pathLength="100"
+                ></circle>
+                <circle
+                  id="remaining-progress-value"
+                  class="usage-ring-value"
+                  cx="26"
+                  cy="26"
+                  r="22"
+                  pathLength="100"
+                ></circle>
+              </svg>
+              <span class="usage-number">
+                <span id="remaining-value">—</span><span class="percent-mark">%</span>
+              </span>
+            </span>
+            <span class="usage-divider" aria-hidden="true"></span>
+            <span class="usage-date">
+              <span id="reset-date" class="reset-date" hidden>
+                <span id="reset-month" class="reset-date-number">—</span>
+                <span class="reset-date-unit">月</span>
+                <span id="reset-day" class="reset-date-number">—</span>
+                <span class="reset-date-unit">日</span>
+              </span>
+              <span id="reset-date-fallback" class="reset-date-fallback">读取中</span>
+              <span id="reset-weekday" class="reset-weekday">周额度</span>
+            </span>
+            <span class="usage-divider" aria-hidden="true"></span>
+            <span class="usage-stats">
+              <span class="usage-stat">
+                <span
+                  class="usage-stat-icon usage-stat-icon-running"
+                  aria-hidden="true"
+                ></span>
+                <span class="usage-stat-label">运行</span>
+                <span id="running-count" class="usage-stat-value">0</span>
+              </span>
+              <span class="usage-stat">
+                <span
+                  class="usage-stat-icon usage-stat-icon-completed"
+                  aria-hidden="true"
+                ></span>
+                <span class="usage-stat-label">完成</span>
+                <span id="completed-count" class="usage-stat-value">0</span>
+              </span>
+            </span>
+          </button>
+        </div>
+
+        <section id="task-panel" class="task-panel" aria-label="Codex 任务" hidden>
+          <div class="task-panel-heading">
+            <span>Codex 任务</span>
+            <span id="task-count" class="task-count">0</span>
+          </div>
+          <div id="task-list" class="task-list"></div>
+          <div id="task-empty" class="task-empty" hidden>暂无进行中的任务</div>
+        </section>
+      </section>
+    </main>
+
+    <div id="live-region" class="sr-only" aria-live="polite"></div>
+    <script src="./index.js"></script>
+  </body>
+</html>

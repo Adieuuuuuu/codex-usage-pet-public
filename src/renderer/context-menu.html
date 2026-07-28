@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; img-src 'none'; style-src 'self'; script-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Usage Pet 设置</title>
+    <link rel="stylesheet" href="./context-menu.css" />
+  </head>
+  <body>
+    <main class="menu-shell" aria-label="Usage Pet 设置">
+      <section id="main-menu" class="menu-view" role="menu">
+        <button id="visibility-action" class="menu-item" role="menuitem" type="button">
+          <span>隐藏桌宠</span>
+        </button>
+        <div class="menu-separator" role="separator"></div>
+        <button id="shrink-action" class="menu-item" role="menuitem" type="button">
+          <span>缩小</span><kbd>Ctrl+-</kbd>
+        </button>
+        <button id="grow-action" class="menu-item" role="menuitem" type="button">
+          <span>放大</span><kbd>Ctrl+=</kbd>
+        </button>
+        <button id="reset-action" class="menu-item" role="menuitem" type="button">
+          <span>恢复默认大小</span>
+        </button>
+        <div class="menu-separator" role="separator"></div>
+        <button id="pets-action" class="menu-item" role="menuitem" type="button">
+          <span>宠物</span><span class="chevron" aria-hidden="true">›</span>
+        </button>
+        <button id="refresh-action" class="menu-item" role="menuitem" type="button">
+          <span>重新扫描宠物</span>
+        </button>
+        <div class="menu-separator" role="separator"></div>
+        <button id="startup-action" class="menu-item" role="menuitemcheckbox" type="button">
+          <span id="startup-check" class="check" aria-hidden="true"></span>
+          <span>随 Windows 登录启动</span>
+        </button>
+        <button id="phone-sync-action" class="menu-item" role="menuitem" type="button">
+          <span>连接手机</span>
+        </button>
+        <button id="codex-action" class="menu-item" role="menuitem" type="button">
+          <span>打开 Codex</span>
+        </button>
+        <div class="menu-separator" role="separator"></div>
+        <button id="quit-action" class="menu-item" role="menuitem" type="button">
+          <span>退出 Usage Pet</span>
+        </button>
+      </section>
+
+      <section id="pet-menu" class="menu-view" role="menu" hidden>
+        <button id="pet-back-action" class="menu-item menu-heading" role="menuitem" type="button">
+          <span class="back" aria-hidden="true">‹</span><span>宠物</span>
+        </button>
+        <div class="menu-separator" role="separator"></div>
+        <div id="pet-options"></div>
+      </section>
+    </main>
+    <script src="./context-menu.js"></script>
+  </body>
+</html>

@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="48dp"
+    android:background="@drawable/bg_usage_capsule"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:paddingStart="5dp"
+    android:paddingEnd="7dp"
+    tools:ignore="SmallSp">
+
+    <FrameLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1">
+
+        <ImageView
+            android:id="@+id/compact_usage_ring"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:layout_gravity="center"
+            android:contentDescription="@null" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:baselineAligned="true"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/compact_usage_number"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text=""
+                android:textColor="@color/usage_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="1dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text="@string/usage_percent_mark"
+                android:textColor="@color/usage_text_primary"
+                android:textSize="8sp" />
+        </LinearLayout>
+    </FrameLayout>
+
+    <TextView
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="@drawable/bg_divider"
+        android:text="" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:baselineAligned="true"
+            android:gravity="bottom"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/compact_reset_month"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text=""
+                android:textColor="@color/usage_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="1dp"
+                android:layout_marginEnd="1dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text="@string/usage_reset_month_unit"
+                android:textColor="@color/usage_text_primary"
+                android:textSize="7sp" />
+
+            <TextView
+                android:id="@+id/compact_reset_day"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text=""
+                android:textColor="@color/usage_text_primary"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="1dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text="@string/usage_reset_day_unit"
+                android:textColor="@color/usage_text_primary"
+                android:textSize="7sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/compact_reset_weekday"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:alpha="0.78"
+            android:fontFamily="sans"
+            android:includeFontPadding="false"
+            android:text=""
+            android:textColor="@color/usage_text_secondary"
+            android:textSize="7sp" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="1dp"
+        android:layout_height="24dp"
+        android:background="@drawable/bg_divider"
+        android:text="" />
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:alpha="0.8"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_circle_play" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text="@string/usage_running_label"
+                android:textColor="@color/usage_text_secondary"
+                android:textSize="8sp" />
+
+            <TextView
+                android:id="@+id/compact_running_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text=""
+                android:textColor="@color/usage_text_primary"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="3dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:alpha="0.8"
+                android:contentDescription="@null"
+                android:src="@drawable/ic_circle_check" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="2dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text="@string/usage_completed_label"
+                android:textColor="@color/usage_text_secondary"
+                android:textSize="8sp" />
+
+            <TextView
+                android:id="@+id/compact_completed_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="3dp"
+                android:fontFamily="sans"
+                android:includeFontPadding="false"
+                android:text=""
+                android:textColor="@color/usage_text_primary"
+                android:textSize="10sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>
