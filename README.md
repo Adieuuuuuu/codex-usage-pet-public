@@ -31,7 +31,7 @@ notification.
 | Android companion | Implemented and locally tested; Xiaomi physical-device gates remain |
 | macOS publisher | Porting blueprint only |
 | iPhone companion | Porting blueprint only; requires a native iOS/APNs design |
-| Public release | Ready for public release as a sanitized MIT snapshot; example assets have separate terms |
+| Public release | Published as a sanitized MIT snapshot; example assets have separate terms |
 
 Windows + Android is the reference implementation. “Blueprint” means the
 repository explains how to port it; it does not mean macOS or iPhone support is
