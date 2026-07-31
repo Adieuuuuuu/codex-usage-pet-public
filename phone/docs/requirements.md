@@ -96,8 +96,8 @@ forbidden.
 - Launching, restoring, or reconnecting the background service without a real
   attention transition never produces a heads-up notification, even though
   the ongoing foreground-service notification remains in the shade.
-- Opening the completed task in Codex removes it from the phone within five
-  seconds.
+- Opening a completed review task from Usage Pet into Codex removes it from the
+  phone within five seconds.
 - Usage percentage and reset date match the same Usage Pet snapshot.
 - Expanded and compact layouts keep the literal `%` mark separate from the
   dynamic reset month and day; both date fields are bound to the live

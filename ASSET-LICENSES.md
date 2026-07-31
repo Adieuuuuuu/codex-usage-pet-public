@@ -25,7 +25,7 @@ Do not infer permission for any different private source material.
 
 `docs/images/android-companion-production.png` is an original emulator capture
 from this project. It is published under CC BY 4.0 with attribution:
-`Codex Usage Pet on Phone UI by Adie`.
+`Codex Usage Pet Mobile UI by Adie`.
 
 The screenshots are design and implementation references, not proof that every
 OS, vendor skin, permission state, or physical device has passed acceptance.

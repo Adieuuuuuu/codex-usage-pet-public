@@ -66,6 +66,8 @@ Read the full story in [Why Codex Usage Pet exists](docs/development-story.md).
 
 - A persistent, silently updating status notification.
 - The same usage capsule and task hierarchy as the desktop.
+- Three complete notification rows plus a `View all` path into the App's
+  scrollable complete synchronized task list.
 - One short alert for a new attention-worthy transition; normal refresh and
   heartbeat remain silent.
 - Protected pairing, authenticated decryption, replay rejection, reconnect,

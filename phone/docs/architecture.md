@@ -129,6 +129,13 @@ The normal and heads-up slots use a dedicated `48dp` compact usage capsule so
 Android SystemUI does not crop its lower half. The expanded slot keeps the full
 source-derived `72dp` usage capsule and three-task panel.
 
+When a verified snapshot contains more than three tasks, the title count exposes
+`查看全部` and opens `MainActivity`. The notification keeps three full rows,
+while the Activity reads and renders the complete verified snapshot in its
+existing scroll surface. `SyncStateStore` keeps the encrypted snapshot in the
+protected store and writes only its non-sensitive `snapshot_sequence` to the
+ordinary preference listener so an already-visible Activity redraws promptly.
+
 Android provides no public API that forces an ordinary custom notification to
 open in its expanded state. The compact view therefore fixes clipping but does
 not make the task panel visible without expansion.

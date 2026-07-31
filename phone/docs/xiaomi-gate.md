@@ -18,18 +18,21 @@ Xiaomi account permission is required.
    within 5 seconds under a normal network.
 2. Pull down the notification shade and expand the fixed notification once.
    Capture a screenshot showing the full usage capsule and task rows.
-3. Let one real task complete. Confirm exactly one system sound and vibration.
-4. Wait for an unchanged five-minute heartbeat. Confirm it causes no sound or
+3. With at least five mixed-state tasks, confirm the notification count shows
+   five and `查看全部` while keeping the first three rows complete. Tap it and
+   confirm the App lists all five in snapshot order and scrolls to the last row.
+4. Let one real task complete. Confirm exactly one system sound and vibration.
+5. Wait for an unchanged five-minute heartbeat. Confirm it causes no sound or
    vibration.
-5. View the completed task in desktop Codex. Confirm it disappears from the
-   phone task list within 5 seconds.
-6. Tap the `Codex 任务` heading to hide the rows, then restore them. Confirm the
+6. Open the completed review task from Usage Pet into desktop Codex. Confirm it
+   disappears from the phone task list within 5 seconds.
+7. Tap the `Codex 任务` heading to hide the rows, then restore them. Confirm the
    choice persists after closing and reopening the notification shade.
-7. Lock and unlock the phone, reopen the app, and reboot the phone. Confirm the
+8. Lock and unlock the phone, reopen the app, and reboot the phone. Confirm the
    foreground notification returns and reconnects automatically.
-8. Disconnect the phone network, then reconnect it. Confirm the app changes to
+9. Disconnect the phone network, then reconnect it. Confirm the app changes to
    offline and returns to connected without duplicate completion alerts.
-9. Repeat with several unrelated notifications present.
+10. Repeat with several unrelated notifications present.
 
 ## Evidence to return
 
@@ -37,6 +40,7 @@ Xiaomi account permission is required.
 - screenshot of the expanded live notification
 - measured start/update and desktop-view removal latency
 - whether the usage capsule lower edge and every visible task row are complete
+- whether `查看全部` opened the App and every synced task was reachable in order
 - whether completion produced exactly one sound and vibration
 - whether the unchanged heartbeat stayed silent
 - whether reconnect and reboot recovered automatically
@@ -46,8 +50,9 @@ Xiaomi account permission is required.
 
 The live desktop state reaches the phone within 5 seconds in normal conditions;
 completion alerts exactly once; unchanged heartbeats remain silent; viewed
-tasks disappear; and the connection survives shade reopen, lock, process
-recreation, network loss, and reboot without duplicate alerts.
+tasks disappear; every synced task remains reachable through the App's complete
+list; and the connection survives shade reopen, lock, process recreation,
+network loss, and reboot without duplicate alerts.
 
 ## Fail
 
