@@ -3,7 +3,7 @@
 ## Install and pair
 
 1. Copy `app/build/outputs/apk/debug/app-debug.apk` to the phone and install it.
-2. Open `Codex Usage Pet on Phone` and allow notifications.
+2. Open `Codex Usage Pet Mobile` and allow notifications.
 3. In HyperOS app settings, enable autostart and set battery use to unrestricted.
 4. In Usage Pet, choose `手机同步` → `生成/复制配对码`.
 5. Open the pairing link on the phone, verify the room and relay address shown

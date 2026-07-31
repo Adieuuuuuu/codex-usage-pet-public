@@ -159,10 +159,22 @@ public final class NotificationPublisher {
         );
         views.setTextViewText(R.id.running_count, Integer.toString(snapshot.runningCount()));
         views.setTextViewText(R.id.completed_count, Integer.toString(snapshot.completedCount()));
+        boolean hasMoreTasks = snapshot.tasks().size() > 3;
         views.setTextViewText(
                 R.id.task_count,
-                context.getString(R.string.notification_task_count, snapshot.tasks().size())
+                context.getString(
+                        hasMoreTasks
+                                ? R.string.notification_task_count_all
+                                : R.string.notification_task_count,
+                        snapshot.tasks().size()
+                )
         );
+        if (hasMoreTasks) {
+            views.setOnClickPendingIntent(
+                    R.id.task_count,
+                    openAppIntent(context)
+            );
+        }
         views.setViewVisibility(
                 R.id.task_list,
                 snapshot.tasksHidden() ? View.GONE : View.VISIBLE

@@ -30,9 +30,52 @@
             android:textColor="@color/usage_text_secondary"
             android:textSize="14sp" />
 
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="32dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentStart="true"
+                android:layout_toStartOf="@id/activity_task_count"
+                android:gravity="center_vertical"
+                android:text="@string/activity_tasks_heading"
+                android:textColor="@color/usage_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/activity_task_count"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_alignParentEnd="true"
+                android:gravity="center_vertical"
+                android:text=""
+                android:textColor="@color/usage_text_secondary"
+                android:textSize="13sp" />
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/activity_task_empty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/activity_no_tasks"
+            android:textColor="@color/usage_text_secondary"
+            android:textSize="14sp" />
+
+        <LinearLayout
+            android:id="@+id/activity_task_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:orientation="vertical" />
+
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
+            android:layout_marginTop="28dp"
             android:text="@string/pairing_title"
             android:textColor="@color/usage_text_primary"
             android:textSize="18sp"

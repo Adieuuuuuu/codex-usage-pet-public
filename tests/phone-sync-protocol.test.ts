@@ -85,6 +85,27 @@ test("projects only the approved phone fields", () => {
   }
 });
 
+test("preserves all five tasks needed by the Mobile complete list", () => {
+  const source = monitorSnapshot();
+  source.tasks = Array.from({ length: 5 }, (_, index) => ({
+    ...source.tasks[0]!,
+    id: `task-${index + 1}`,
+    title: `Task ${index + 1}`,
+    updatedAt: 1_785_200_000_000 + index,
+  }));
+
+  const projected = projectPhoneSnapshot(
+    source,
+    9,
+    1_785_200_100_000,
+  );
+
+  assert.deepEqual(
+    projected.tasks.map(({ id }) => id),
+    ["task-1", "task-2", "task-3", "task-4", "task-5"],
+  );
+});
+
 test("pairing URI round-trips and derives separate stable keys", () => {
   const pairing = generatePhonePairing(
     "https://relay.example.workers.dev/",

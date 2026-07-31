@@ -37,10 +37,11 @@ public final class AndroidSurfaceContractTest {
     }
 
     @Test
-    public void mainLayoutContainsOnlyPairingControls() throws Exception {
+    public void mainLayoutContainsOnlyProductionControls() throws Exception {
         Document layout = parse("src/main/res/layout/activity_main.xml");
 
         assertNotNull(findById(layout, "root_scroll"));
+        assertNotNull(findById(layout, "activity_task_list"));
         assertNotNull(findById(layout, "connect"));
         assertNotNull(findById(layout, "disconnect"));
         assertFalse(hasId(layout, "debug_controls"));

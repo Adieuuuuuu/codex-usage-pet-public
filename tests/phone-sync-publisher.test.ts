@@ -181,6 +181,51 @@ test("republishes an unchanged snapshot as a bounded heartbeat", async () => {
   assert.notEqual(envelopes[0]?.nonce, envelopes[1]?.nonce);
 });
 
+test("recovery republishes unchanged content without waiting for heartbeat", async () => {
+  const store = new PhoneSyncStore(
+    join(temporaryRoot, "publisher-recovery.json"),
+    protector,
+  );
+  store.createPairing("https://relay.example.workers.dev");
+  const envelopes: PhoneSyncEnvelope[] = [];
+  let resolveFirst!: () => void;
+  const firstPublish = new Promise<void>((resolve) => {
+    resolveFirst = resolve;
+  });
+  let resolveSecond!: () => void;
+  const secondPublish = new Promise<void>((resolve) => {
+    resolveSecond = resolve;
+  });
+  const publisher = new PhoneSyncPublisher({
+    store,
+    fetch: (async (_input, init) => {
+      envelopes.push(
+        JSON.parse(String(init?.body)) as PhoneSyncEnvelope,
+      );
+      if (envelopes.length === 1) {
+        resolveFirst();
+      }
+      if (envelopes.length === 2) {
+        resolveSecond();
+      }
+      return new Response('{"ok":true}', { status: 200 });
+    }) as typeof fetch,
+    heartbeatMs: 60_000,
+  });
+
+  publisher.update(snapshot());
+  await firstPublish;
+  publisher.recover(snapshot());
+  await secondPublish;
+  publisher.stop();
+
+  assert.deepEqual(
+    envelopes.map(({ sequence }) => sequence),
+    [1, 2],
+  );
+  assert.notEqual(envelopes[0]?.nonce, envelopes[1]?.nonce);
+});
+
 test("does not let an in-flight old pairing supersede a rotated pairing", async () => {
   const store = new PhoneSyncStore(
     join(temporaryRoot, "publisher-rotation.json"),

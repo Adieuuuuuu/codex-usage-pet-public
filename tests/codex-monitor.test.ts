@@ -12,6 +12,8 @@ import test from "node:test";
 
 import {
   CodexMonitor,
+  isVolatileTaskFromCurrentWindowsSession,
+  shouldShowReviewTask,
   shouldShowTaskForProcessState,
   type CodexMonitorSnapshot,
 } from "../src/services/codex-monitor.ts";
@@ -70,6 +72,96 @@ test("drops phantom running after Codex process absence is confirmed", () => {
     shouldShowTaskForProcessState("waiting", true, false),
     true,
   );
+});
+
+test("drops volatile task states from a previous Windows session", () => {
+  const windowsSessionStartedAt = 2_000;
+
+  assert.equal(
+    isVolatileTaskFromCurrentWindowsSession(
+      "running",
+      1_999,
+      windowsSessionStartedAt,
+    ),
+    false,
+  );
+  assert.equal(
+    isVolatileTaskFromCurrentWindowsSession(
+      "waiting",
+      1_999,
+      windowsSessionStartedAt,
+    ),
+    false,
+  );
+  assert.equal(
+    isVolatileTaskFromCurrentWindowsSession(
+      "running",
+      windowsSessionStartedAt,
+      windowsSessionStartedAt,
+    ),
+    true,
+  );
+  assert.equal(
+    isVolatileTaskFromCurrentWindowsSession(
+      "review",
+      1_999,
+      windowsSessionStartedAt,
+    ),
+    true,
+  );
+});
+
+test("review acknowledgement applies only to one completion event", () => {
+  assert.equal(shouldShowReviewTask(true, 2_000, undefined), true);
+  assert.equal(shouldShowReviewTask(false, 2_000, undefined), false);
+  assert.equal(shouldShowReviewTask(true, 2_000, 2_000), false);
+  assert.equal(shouldShowReviewTask(true, 2_001, 2_000), true);
+});
+
+test("emits one explicit empty snapshot on cold start", async () => {
+  const root = await mkdtemp(join(tmpdir(), "usage-pet-empty-monitor-"));
+  const sessionsRoot = join(root, "sessions");
+  const databasePath = join(root, "state_5.sqlite");
+  const hookPath = join(root, "hook-events.jsonl");
+  await mkdir(sessionsRoot, { recursive: true });
+
+  const database = new DatabaseSync(databasePath);
+  database.exec(`
+    CREATE TABLE threads (
+      id TEXT PRIMARY KEY,
+      title TEXT,
+      name TEXT,
+      preview TEXT,
+      cwd TEXT,
+      rollout_path TEXT,
+      updated_at INTEGER,
+      updated_at_ms INTEGER,
+      recency_at INTEGER,
+      recency_at_ms INTEGER,
+      source TEXT,
+      archived INTEGER
+    )
+  `);
+  database.close();
+
+  const monitor = new CodexMonitor(
+    new ThreadRepository(databasePath, [sessionsRoot]),
+    new HookEventStore(hookPath),
+    async () => false,
+    Date.now(),
+  );
+  const snapshots: CodexMonitorSnapshot[] = [];
+  monitor.subscribe((next) => snapshots.push(next));
+
+  try {
+    await monitor.start();
+
+    assert.equal(snapshots.length, 1);
+    assert.deepEqual(snapshots[0]?.tasks, []);
+    assert.equal(snapshots[0]?.primaryState, "idle");
+  } finally {
+    monitor.stop();
+  }
 });
 
 test("discovers new Codex threads and tails state plus weekly usage", async () => {
@@ -299,6 +391,56 @@ test("discovers new Codex threads and tails state plus weekly usage", async () =
       "review",
     );
     assert.equal(stable.usage.weekly?.remainingPercent, 66);
+
+    assert.equal(
+      monitor.reviewEventAt(THREAD_TWO),
+      eventBase + 5_000,
+    );
+    assert.equal(
+      monitor.acknowledgeReview(THREAD_TWO, eventBase + 4_999),
+      null,
+    );
+    assert.equal(
+      monitor.snapshot.tasks.some(({ id }) => id === THREAD_TWO),
+      true,
+    );
+    assert.equal(
+      monitor.acknowledgeReview(THREAD_TWO, eventBase + 5_000),
+      eventBase + 5_000,
+    );
+    assert.equal(
+      monitor.snapshot.tasks.some(({ id }) => id === THREAD_TWO),
+      false,
+    );
+    assert.deepEqual(
+      monitor.snapshot.notificationTasks.find(
+        ({ id }) => id === THREAD_TWO,
+      ),
+      {
+        id: THREAD_TWO,
+        status: "review",
+      },
+    );
+
+    await appendFile(
+      secondRollout,
+      [
+        line(new Date(eventBase + 6_000).toISOString(), "task_started"),
+        line(new Date(eventBase + 7_000).toISOString(), "task_complete"),
+        "",
+      ].join("\n"),
+      "utf8",
+    );
+    const newerReview = await waitForSnapshot(
+      monitor,
+      (snapshot) =>
+        snapshot.tasks.find(({ id }) => id === THREAD_TWO)?.status ===
+        "review",
+    );
+    assert.equal(
+      newerReview.tasks.find(({ id }) => id === THREAD_TWO)?.updatedAt,
+      eventBase + 7_000,
+    );
 
     await writeFile(
       globalStatePath,

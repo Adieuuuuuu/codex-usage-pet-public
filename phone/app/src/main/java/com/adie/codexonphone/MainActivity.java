@@ -13,14 +13,20 @@ import android.view.DisplayCutout;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 
 public final class MainActivity extends Activity {
     private static final int NOTIFICATION_PERMISSION_REQUEST = 2208;
     private TextView status;
     private EditText pairingCode;
+    private TextView taskCount;
+    private TextView taskEmpty;
+    private LinearLayout taskList;
     private final SharedPreferences.OnSharedPreferenceChangeListener
-            stateListener = (preferences, key) -> updateStateStatus();
+            stateListener = (preferences, key) -> renderState();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,6 +35,9 @@ public final class MainActivity extends Activity {
         applySafeAreaInsets(findViewById(R.id.root_scroll));
         status = findViewById(R.id.status);
         pairingCode = findViewById(R.id.pairing_code);
+        taskCount = findViewById(R.id.activity_task_count);
+        taskEmpty = findViewById(R.id.activity_task_empty);
+        taskList = findViewById(R.id.activity_task_list);
 
         findViewById(R.id.connect).setOnClickListener(view ->
                 connect(pairingCode.getText().toString()));
@@ -38,6 +47,7 @@ public final class MainActivity extends Activity {
             NotificationPublisher.clear(this);
             pairingCode.setText("");
             status.setText(R.string.pairing_disconnected);
+            renderTasks();
         });
 
         requestNotificationPermissionIfNeeded();
@@ -45,7 +55,7 @@ public final class MainActivity extends Activity {
         if (SyncStateStore.isSyncEnabled(this)) {
             SyncForegroundService.start(this);
         }
-        updateStateStatus();
+        renderState();
     }
 
     @Override
@@ -59,7 +69,7 @@ public final class MainActivity extends Activity {
     protected void onStart() {
         super.onStart();
         SyncStateStore.registerListener(this, stateListener);
-        updateStateStatus();
+        renderState();
     }
 
     @Override
@@ -72,7 +82,7 @@ public final class MainActivity extends Activity {
     protected void onResume() {
         super.onResume();
         if (status != null) {
-            updateStateStatus();
+            renderState();
         }
     }
 
@@ -116,6 +126,87 @@ public final class MainActivity extends Activity {
             return;
         }
         status.setText(R.string.sync_unpaired);
+    }
+
+    private void renderState() {
+        updateStateStatus();
+        renderTasks();
+    }
+
+    private void renderTasks() {
+        CodexSnapshot snapshot = SyncStateStore.loadSnapshot(this);
+        taskCount.setText(getString(
+                R.string.activity_task_count,
+                snapshot.tasks().size()
+        ));
+        taskList.removeAllViews();
+        boolean empty = snapshot.tasks().isEmpty();
+        taskEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
+        taskList.setVisibility(empty ? View.GONE : View.VISIBLE);
+
+        int index = 0;
+        for (CodexSnapshot.Task task : snapshot.tasks()) {
+            View row = getLayoutInflater().inflate(
+                    R.layout.activity_task_row,
+                    taskList,
+                    false
+            );
+            if (index > 0) {
+                LinearLayout.LayoutParams layoutParams =
+                        (LinearLayout.LayoutParams) row.getLayoutParams();
+                layoutParams.topMargin = Math.round(
+                        7 * getResources().getDisplayMetrics().density
+                );
+                row.setLayoutParams(layoutParams);
+            }
+            bindTaskRow(row, task);
+            taskList.addView(row);
+            index++;
+        }
+    }
+
+    private void bindTaskRow(View row, CodexSnapshot.Task task) {
+        TextView title = row.findViewById(R.id.activity_task_title);
+        TextView meta = row.findViewById(R.id.activity_task_meta);
+        TextView state = row.findViewById(R.id.activity_task_state);
+        ImageView icon = row.findViewById(R.id.activity_task_icon);
+        ProgressBar spinner = row.findViewById(R.id.activity_task_spinner);
+
+        title.setText(task.title());
+        meta.setText(formatTaskMeta(task));
+        boolean running = task.status() == CodexSnapshot.TaskStatus.RUNNING;
+        icon.setVisibility(running ? View.GONE : View.VISIBLE);
+        spinner.setVisibility(running ? View.VISIBLE : View.GONE);
+
+        switch (task.status()) {
+            case REVIEW:
+                icon.setImageResource(R.drawable.ic_task_review);
+                state.setText(R.string.task_state_review);
+                break;
+            case WAITING:
+                icon.setImageResource(R.drawable.ic_task_review);
+                state.setText(R.string.task_state_waiting);
+                break;
+            case FAILED:
+                icon.setImageResource(R.drawable.ic_task_review);
+                state.setText(R.string.task_state_failed);
+                break;
+            case RUNNING:
+            default:
+                state.setText(R.string.task_state_running);
+                break;
+        }
+    }
+
+    private CharSequence formatTaskMeta(CodexSnapshot.Task task) {
+        String age = TaskAgeFormatter.format(
+                task.updatedAt(),
+                System.currentTimeMillis()
+        );
+        if (task.workspaceName() == null || task.workspaceName().isEmpty()) {
+            return age;
+        }
+        return task.workspaceName() + " · " + age;
     }
 
     private void handlePairingIntent(Intent intent) {

@@ -157,6 +157,29 @@ public final class SyncProtocolTest {
     }
 
     @Test
+    public void snapshotCodecPreservesFiveTaskOrder() throws Exception {
+        JSONObject root = new JSONObject(validSnapshotJson(10));
+        JSONArray tasks = root.getJSONArray("tasks");
+        JSONObject task = tasks.getJSONObject(0);
+        while (tasks.length() < 5) {
+            tasks.put(new JSONObject(task.toString())
+                    .put("id", "task-" + tasks.length())
+                    .put("title", "Task " + tasks.length())
+                    .put("updatedAt", 1_785_200_000_000L + tasks.length()));
+        }
+
+        CodexSnapshot snapshot = SnapshotCodec.decode(root.toString(), false);
+        CodexSnapshot decoded = SnapshotCodec.decode(
+                SnapshotCodec.encode(snapshot),
+                false
+        );
+
+        assertEquals(5, decoded.tasks().size());
+        assertEquals("task-running", decoded.tasks().get(0).id());
+        assertEquals("task-4", decoded.tasks().get(4).id());
+    }
+
+    @Test
     public void snapshotCodecRejectsMoreThanTenTasks() throws Exception {
         JSONObject root = new JSONObject(validSnapshotJson(10));
         JSONArray tasks = root.getJSONArray("tasks");

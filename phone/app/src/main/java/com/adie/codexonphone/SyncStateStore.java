@@ -10,6 +10,7 @@ public final class SyncStateStore {
     private static final String TASKS_HIDDEN = "tasks_hidden";
     private static final String SYNC_ENABLED = "sync_enabled";
     private static final String CONNECTION_STATE = "connection_state";
+    private static final String SNAPSHOT_SEQUENCE = "snapshot_sequence";
 
     private SyncStateStore() {
     }
@@ -40,6 +41,7 @@ public final class SyncStateStore {
         preferences(context).edit()
                 .putBoolean(SYNC_ENABLED, false)
                 .putString(CONNECTION_STATE, "unpaired")
+                .remove(SNAPSHOT_SEQUENCE)
                 .apply();
     }
 
@@ -50,6 +52,9 @@ public final class SyncStateStore {
 
     public static void saveSnapshot(Context context, CodexSnapshot snapshot) {
         new SecureStore(context).put(SNAPSHOT, SnapshotCodec.encode(snapshot));
+        preferences(context).edit()
+                .putLong(SNAPSHOT_SEQUENCE, snapshot.sequence())
+                .apply();
     }
 
     public static CodexSnapshot loadSnapshot(Context context) {

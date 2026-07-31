@@ -10,8 +10,8 @@ android {
         applicationId = "com.adie.codexonphone"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.3.1"
+        versionCode = 8
+        versionName = "0.3.2"
     }
 
     buildTypes {

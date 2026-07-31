@@ -1,4 +1,4 @@
-# Codex Usage Pet on Phone architecture
+# Codex Usage Pet Mobile architecture
 
 ## Phase-1 live chain
 

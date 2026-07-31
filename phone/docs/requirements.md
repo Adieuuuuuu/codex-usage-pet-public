@@ -1,4 +1,22 @@
-# Codex Usage Pet on Phone requirements
+# Codex Usage Pet Mobile requirements
+
+## Complete task access and Mobile naming
+
+- The user-visible application name is `Codex Usage Pet Mobile`. Preserve the
+  existing application ID, pairing URI, secure stores, notification IDs,
+  channels, and signing identity.
+- The expanded notification may keep three full task rows because Android and
+  HyperOS bound custom notification height. When more tasks exist, its count
+  must expose an explicit path to the application.
+- The application must render every task present in the verified snapshot in
+  snapshot order, with the existing title, workspace, age, and honest
+  `running` / `waiting` / `review` / `failed` state. It must not invent
+  per-task percentage progress.
+- Saving a verified snapshot must notify an already visible Activity through
+  non-sensitive local state, without exposing pairing material or plaintext.
+- The launcher icon must be an original project asset. Keep the existing
+  monochrome notification icon for SystemUI and do not use OpenAI or ChatGPT
+  marks as this application's own branding.
 
 ## Phase 1: live encrypted synchronization
 

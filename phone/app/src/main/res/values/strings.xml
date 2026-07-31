@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Codex Usage Pet on Phone</string>
-    <string name="screen_title">Codex Usage Pet</string>
+    <string name="app_name">Codex Usage Pet Mobile</string>
+    <string name="screen_title">Codex Usage Pet Mobile</string>
     <string name="notification_channel_name">Codex 任务提醒</string>
     <string name="notification_channel_description">Codex 任务完成时发出声音和振动</string>
     <string name="notification_quiet_channel_name">Codex 任务状态</string>
@@ -9,6 +9,10 @@
     <string name="notification_tasks_heading">Codex 任务</string>
     <string name="notification_content_count">%1$d 条任务</string>
     <string name="notification_task_count">%1$d 条</string>
+    <string name="notification_task_count_all">%1$d 条 · 查看全部</string>
+    <string name="activity_tasks_heading">Codex 任务</string>
+    <string name="activity_task_count">%1$d 条</string>
+    <string name="activity_no_tasks">暂无任务</string>
     <string name="usage_percent_mark">%</string>
     <string name="usage_reset_month_unit">月</string>
     <string name="usage_reset_day_unit">日</string>

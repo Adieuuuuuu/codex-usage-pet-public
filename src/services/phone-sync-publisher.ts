@@ -83,6 +83,19 @@ export class PhoneSyncPublisher {
   }
 
   pairingChanged(source: CodexMonitorSnapshot): void {
+    this.#restart(source);
+  }
+
+  recover(source: CodexMonitorSnapshot): void {
+    const contentKey = phoneSnapshotContentKey(source);
+    if (contentKey !== this.#lastPublishedContentKey) {
+      this.update(source);
+      return;
+    }
+    this.#restart(source);
+  }
+
+  #restart(source: CodexMonitorSnapshot): void {
     this.#pairingRevision += 1;
     this.#clearHeartbeat();
     this.#lastPublishedContentKey = null;

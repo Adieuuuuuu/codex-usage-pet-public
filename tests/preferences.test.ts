@@ -18,6 +18,7 @@ test("normalizes persisted scale, position, and selected pet", () => {
       scale: 0.55,
       position: { x: 13, y: -9 },
       selectedPetId: "zhima-3",
+      reviewAcknowledgements: {},
     },
   );
 });
@@ -45,6 +46,23 @@ test("falls back safely for malformed preference fields", () => {
       scale: 1,
       position: null,
       selectedPetId: "zhima-3",
+      reviewAcknowledgements: {},
+    },
+  );
+});
+
+test("keeps only bounded review acknowledgements with valid identities", () => {
+  const validThread = "00000000-0000-7000-8000-000000000001";
+  assert.deepEqual(
+    normalizePreferences({
+      reviewAcknowledgements: {
+        [validThread]: 1_785_200_000_000,
+        "../escape": 1_785_200_000_001,
+        "00000000-0000-7000-8000-000000000002": "private",
+      },
+    }).reviewAcknowledgements,
+    {
+      [validThread]: 1_785_200_000_000,
     },
   );
 });

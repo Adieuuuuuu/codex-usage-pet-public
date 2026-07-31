@@ -1,4 +1,4 @@
-# Codex Usage Pet on Phone
+# Codex Usage Pet Mobile
 
 This directory is the phone and private-relay component of the Codex Usage Pet
 monorepo. The Windows desktop publisher lives at the repository root.
@@ -65,14 +65,15 @@ browser authorization.
 2. Open its context menu and choose `连接手机`.
 3. Usage Pet creates a protected pairing, publishes the current encrypted
    snapshot, and copies a pairing code for five minutes.
-4. Open `Codex Usage Pet on Phone`, paste the code, and tap `连接`.
+4. Open `Codex Usage Pet Mobile`, paste the code, and tap `连接`.
 5. On Xiaomi, enable notifications, autostart, and unrestricted battery use for
    this app, then run `docs/xiaomi-gate.md`.
 
-The expanded notification's `Codex 任务` heading hides or restores task rows.
-Tasks are visible by default. Phase-0 fake controls and sample-data entry
-points are not packaged in either debug or release variants; deterministic
-visual and contract fixtures remain under tests and public documentation.
+The expanded notification keeps three complete task rows and links to the app
+for the full synchronized task list. Tasks are visible by default. Phase-0 fake
+controls and sample-data entry points are not packaged in either debug or
+release variants; deterministic visual and contract fixtures remain under
+tests and public documentation.
 
 ## Platform boundary
 

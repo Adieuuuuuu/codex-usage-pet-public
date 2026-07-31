@@ -9,4 +9,5 @@
     <color name="usage_blue">#77A7C9</color>
     <color name="usage_progress_track">#21F5F7F4</color>
     <color name="usage_progress_fill">#EBF5F7F4</color>
+    <color name="launcher_background">#171918</color>
 </resources>

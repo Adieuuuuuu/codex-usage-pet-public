@@ -6,6 +6,7 @@ import {
   openSync,
   readSync,
 } from "node:fs";
+import { uptime } from "node:os";
 import { promisify } from "node:util";
 
 import type {
@@ -158,17 +159,41 @@ export const shouldShowTaskForProcessState = (
 ): boolean =>
   status !== "running" || !codexProcessKnown || codexRunning;
 
+export const isVolatileTaskFromCurrentWindowsSession = (
+  status: SessionReducerState["status"],
+  eventAt: number,
+  windowsSessionStartedAt: number,
+): boolean =>
+  (status !== "running" && status !== "waiting") ||
+  eventAt >= windowsSessionStartedAt;
+
+export const shouldShowReviewTask = (
+  isUnread: boolean,
+  eventAt: number,
+  acknowledgedAt: number | undefined,
+): boolean => isUnread && eventAt !== acknowledgedAt;
+
 const isCurrentStatus = (
   session: TrackedSession,
   now: number,
   codexProcessKnown: boolean,
   codexRunning: boolean,
+  windowsSessionStartedAt: number,
 ): boolean => {
   const eventAt = session.reducer.latestEventAt;
   if (
     session.reducer.status === "idle" ||
     eventAt === null ||
     now - eventAt > statusMaxAge(session.reducer.status)
+  ) {
+    return false;
+  }
+  if (
+    !isVolatileTaskFromCurrentWindowsSession(
+      session.reducer.status,
+      eventAt,
+      windowsSessionStartedAt,
+    )
   ) {
     return false;
   }
@@ -189,23 +214,37 @@ export class CodexMonitor {
   readonly #hookEvents: HookEventStore;
   readonly #detectCodexProcess: CodexProcessDetector;
   readonly #sessions = new Map<string, TrackedSession>();
+  readonly #reviewAcknowledgements = new Map<string, number>();
   readonly #listeners = new Set<(snapshot: CodexMonitorSnapshot) => void>();
   #pendingHookObservations: HookObservation[] = [];
   #snapshot = emptySnapshot();
   #timer: NodeJS.Timeout | null = null;
-  #polling = false;
+  #polling: Promise<void> | null = null;
   #lastProcessCheckAt = 0;
   #codexRunning = false;
   #hasProcessCheck = false;
+  #hasPublishedSnapshot = false;
+  readonly #windowsSessionStartedAt: number;
 
   constructor(
     repository: ThreadRepository,
     hookEvents: HookEventStore,
     processDetector: CodexProcessDetector = detectCodexProcess,
+    windowsSessionStartedAt = Date.now() - uptime() * 1_000,
+    reviewAcknowledgements: Readonly<Record<string, number>> = {},
   ) {
     this.#repository = repository;
     this.#hookEvents = hookEvents;
     this.#detectCodexProcess = processDetector;
+    this.#windowsSessionStartedAt = Math.max(
+      0,
+      Math.floor(windowsSessionStartedAt),
+    );
+    for (const [threadId, completedAt] of Object.entries(
+      reviewAcknowledgements,
+    )) {
+      this.#reviewAcknowledgements.set(threadId, completedAt);
+    }
   }
 
   get snapshot(): CodexMonitorSnapshot {
@@ -219,15 +258,52 @@ export class CodexMonitor {
     return () => this.#listeners.delete(listener);
   }
 
-  start(): void {
-    if (this.#timer !== null) {
-      return;
+  start(): Promise<void> {
+    if (this.#timer === null) {
+      this.#timer = setInterval(() => {
+        void this.refreshNow();
+      }, 1_000);
+      this.#timer.unref();
     }
-    void this.#poll();
-    this.#timer = setInterval(() => {
-      void this.#poll();
-    }, 1_000);
-    this.#timer.unref();
+    return this.refreshNow(true);
+  }
+
+  refreshNow(forceProcessCheck = false): Promise<void> {
+    if (this.#polling !== null) {
+      return this.#polling;
+    }
+    const polling = this.#poll(forceProcessCheck).finally(() => {
+      if (this.#polling === polling) {
+        this.#polling = null;
+      }
+    });
+    this.#polling = polling;
+    return polling;
+  }
+
+  reviewEventAt(threadId: string): number | null {
+    const session = this.#sessions.get(threadId);
+    const completedAt = session?.reducer.latestEventAt ?? null;
+    if (
+      session?.reducer.status !== "review" ||
+      completedAt === null
+    ) {
+      return null;
+    }
+    return completedAt;
+  }
+
+  acknowledgeReview(
+    threadId: string,
+    expectedCompletedAt: number,
+  ): number | null {
+    const completedAt = this.reviewEventAt(threadId);
+    if (completedAt !== expectedCompletedAt) {
+      return null;
+    }
+    this.#reviewAcknowledgements.set(threadId, completedAt);
+    this.#publish(Date.now());
+    return completedAt;
   }
 
   stop(): void {
@@ -240,32 +316,28 @@ export class CodexMonitor {
     this.#pendingHookObservations = [];
   }
 
-  async #poll(): Promise<void> {
-    if (this.#polling) {
-      return;
+  async #poll(forceProcessCheck: boolean): Promise<void> {
+    const now = Date.now();
+    const shouldCheckProcess =
+      forceProcessCheck || now - this.#lastProcessCheckAt >= 10_000;
+    const processCheck = shouldCheckProcess
+      ? this.#detectCodexProcess()
+      : null;
+    if (shouldCheckProcess) {
+      this.#lastProcessCheckAt = now;
     }
-    this.#polling = true;
 
-    try {
-      const now = Date.now();
-      this.#syncThreads(now);
-      this.#readRollouts();
-      this.#readHooks();
-      this.#publish(now);
+    this.#syncThreads(now);
+    this.#readRollouts();
+    this.#readHooks();
 
-      if (now - this.#lastProcessCheckAt >= 10_000) {
-        this.#lastProcessCheckAt = now;
-        const codexRunning = await this.#detectCodexProcess();
-        const wasKnown = this.#hasProcessCheck;
-        this.#hasProcessCheck = true;
-        if (!wasKnown || codexRunning !== this.#codexRunning) {
-          this.#codexRunning = codexRunning;
-          this.#publish(Date.now());
-        }
-      }
-    } finally {
-      this.#polling = false;
+    if (processCheck !== null) {
+      const codexRunning = await processCheck;
+      this.#hasProcessCheck = true;
+      this.#codexRunning = codexRunning;
     }
+
+    this.#publish(Date.now());
   }
 
   #syncThreads(now: number): void {
@@ -390,6 +462,7 @@ export class CodexMonitor {
           now,
           this.#hasProcessCheck,
           this.#codexRunning,
+          this.#windowsSessionStartedAt,
         ),
       )
       .sort(
@@ -405,9 +478,20 @@ export class CodexMonitor {
     );
     const tasks = currentSessions
       .filter(
-        (session) =>
-          session.reducer.status !== "review" ||
-          session.thread.isUnread,
+        (session) => {
+          if (session.reducer.status !== "review") {
+            return true;
+          }
+          const eventAt = session.reducer.latestEventAt;
+          return (
+            eventAt !== null &&
+            shouldShowReviewTask(
+              session.thread.isUnread,
+              eventAt,
+              this.#reviewAcknowledgements.get(session.thread.id),
+            )
+          );
+        },
       )
       .map<TaskSnapshot>((session) => ({
         id: session.thread.id,
@@ -469,10 +553,14 @@ export class CodexMonitor {
           : "fallback",
     };
 
-    if (JSON.stringify(nextSnapshot) === JSON.stringify(this.#snapshot)) {
+    if (
+      this.#hasPublishedSnapshot &&
+      JSON.stringify(nextSnapshot) === JSON.stringify(this.#snapshot)
+    ) {
       return;
     }
     this.#snapshot = nextSnapshot;
+    this.#hasPublishedSnapshot = true;
     for (const listener of this.#listeners) {
       listener(nextSnapshot);
     }

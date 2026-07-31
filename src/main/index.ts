@@ -10,6 +10,7 @@ import {
   Menu,
   nativeImage,
   net,
+  powerMonitor,
   protocol,
   safeStorage,
   screen,
@@ -89,6 +90,7 @@ let phoneSyncPublisher: PhoneSyncPublisher | null = null;
 let phoneRelayEndpoint: string | null = null;
 let pairingClipboardTimer: NodeJS.Timeout | null = null;
 let copiedPairingCode: string | null = null;
+let resumeRecovery: Promise<void> | null = null;
 let tray: Tray | null = null;
 let quitting = false;
 
@@ -269,6 +271,27 @@ const refreshPhoneSyncMenus = (): void => {
   contextMenuController?.sendSnapshot(createContextMenuSnapshot());
 };
 
+const recoverAfterSystemResume = (): void => {
+  if (
+    resumeRecovery !== null ||
+    monitor === null ||
+    phoneSyncPublisher === null
+  ) {
+    return;
+  }
+  const activeMonitor = monitor;
+  const activePublisher = phoneSyncPublisher;
+  const recovery = activeMonitor
+    .refreshNow(true)
+    .then(() => activePublisher.recover(activeMonitor.snapshot))
+    .finally(() => {
+      if (resumeRecovery === recovery) {
+        resumeRecovery = null;
+      }
+    });
+  resumeRecovery = recovery;
+};
+
 const clearPairingClipboard = (): void => {
   if (pairingClipboardTimer !== null) {
     clearTimeout(pairingClipboardTimer);
@@ -305,7 +328,7 @@ const showPairingCopied = async (): Promise<void> => {
     title: "连接手机",
     message: "配对代码已复制",
     detail:
-      "请在 Codex Usage Pet on Phone 中粘贴并连接。"
+      "请在 Codex Usage Pet Mobile 中粘贴并连接。"
       + "为安全起见，电脑剪贴板中的代码会在 5 分钟后清除。",
     buttons: ["知道了"],
     defaultId: 0,
@@ -700,8 +723,23 @@ const installIpcHandlers = (): void => {
       if (!known) {
         return false;
       }
+      const clickedReviewAt = monitor?.reviewEventAt(threadId) ?? null;
       try {
         await shell.openExternal(`codex://threads/${threadId}`);
+        const completedAt = clickedReviewAt === null
+          ? null
+          : monitor?.acknowledgeReview(
+            threadId,
+            clickedReviewAt,
+          ) ?? null;
+        if (completedAt !== null && preferences !== null) {
+          preferences.update({
+            reviewAcknowledgements: {
+              ...preferences.value.reviewAcknowledgements,
+              [threadId]: completedAt,
+            },
+          });
+        }
         return true;
       } catch {
         try {
@@ -791,6 +829,9 @@ const bootstrap = async (): Promise<void> => {
   monitor = new CodexMonitor(
     repository,
     new HookEventStore(join(userData, "hook-events.jsonl")),
+    undefined,
+    undefined,
+    preferences.value.reviewAcknowledgements,
   );
   try {
     const environmentEndpoint =
@@ -855,7 +896,9 @@ const bootstrap = async (): Promise<void> => {
     broadcastSnapshot();
     phoneSyncPublisher?.update(snapshot);
   });
-  monitor.start();
+  powerMonitor.on("resume", recoverAfterSystemResume);
+  await monitor.start();
+  phoneSyncPublisher.update(monitor.snapshot);
 
   if (!app.isPackaged && process.argv.includes("--capture-smoke")) {
     setTimeout(() => {
@@ -894,6 +937,7 @@ if (!hasSingleInstanceLock) {
   app.on("before-quit", () => {
     quitting = true;
     controller?.setQuitting();
+    powerMonitor.removeListener("resume", recoverAfterSystemResume);
     monitor?.stop();
     phoneSyncPublisher?.stop();
     phoneSyncPublisher = null;

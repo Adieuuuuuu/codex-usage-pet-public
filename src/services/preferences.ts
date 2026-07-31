@@ -16,6 +16,7 @@ export interface UsagePetPreferences {
   scale: number;
   position: WindowPosition | null;
   selectedPetId: string;
+  reviewAcknowledgements: Record<string, number>;
 }
 
 export const MIN_SCALE = 0.55;
@@ -25,7 +26,12 @@ const DEFAULT_PREFERENCES: UsagePetPreferences = {
   scale: 1,
   position: null,
   selectedPetId: "zhima-3",
+  reviewAcknowledgements: {},
 };
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_REVIEW_ACKNOWLEDGEMENTS = 128;
 
 const clampScale = (value: unknown): number => {
   if (typeof value !== "number" || !Number.isFinite(value)) {
@@ -70,6 +76,26 @@ const normalizeSelectedPetId = (value: unknown): string => {
   return value;
 };
 
+const normalizeReviewAcknowledgements = (
+  value: unknown,
+): Record<string, number> => {
+  if (typeof value !== "object" || value === null) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(value)
+      .filter(
+        (entry): entry is [string, number] =>
+          UUID_PATTERN.test(entry[0]) &&
+          typeof entry[1] === "number" &&
+          Number.isSafeInteger(entry[1]) &&
+          entry[1] > 0,
+      )
+      .sort((left, right) => right[1] - left[1])
+      .slice(0, MAX_REVIEW_ACKNOWLEDGEMENTS),
+  );
+};
+
 export const normalizePreferences = (
   value: unknown,
 ): UsagePetPreferences => {
@@ -81,6 +107,9 @@ export const normalizePreferences = (
     scale: clampScale(record.scale),
     position: normalizePosition(record.position),
     selectedPetId: normalizeSelectedPetId(record.selectedPetId),
+    reviewAcknowledgements: normalizeReviewAcknowledgements(
+      record.reviewAcknowledgements,
+    ),
   };
 };
 
@@ -100,6 +129,9 @@ export class PreferencesStore {
         this.#preferences.position === null
           ? null
           : { ...this.#preferences.position },
+      reviewAcknowledgements: {
+        ...this.#preferences.reviewAcknowledgements,
+      },
     };
   }
 
