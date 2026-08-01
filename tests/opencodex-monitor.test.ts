@@ -36,7 +36,7 @@ const waitForUsage = async (
   assert.fail(`Timed out waiting for usage: ${JSON.stringify(monitor.snapshot)}`);
 };
 
-test("uses the OpenCodex quota cache instead of a synthetic rollout window", async () => {
+test("uses OpenCodex quota and rejects its synthetic rollout fallback", async () => {
   const root = await mkdtemp(join(tmpdir(), "usage-pet-opencodex-monitor-"));
   const sessionsRoot = join(root, "sessions");
   const hookPath = join(root, "hook-events.jsonl");
@@ -62,6 +62,7 @@ test("uses the OpenCodex quota cache instead of a synthetic rollout window", asy
     "utf8",
   );
 
+  let quotaAvailable = true;
   const monitor = new CodexMonitor(
     {
       listRecent() {
@@ -82,14 +83,18 @@ test("uses the OpenCodex quota cache instead of a synthetic rollout window", asy
     async () => true,
     0,
     {},
-    () => ({
-      remainingPercent: 97,
-      usedPercent: 3,
-      windowDurationMins: 10_080,
-      resetsAt: Math.floor(now / 1_000) + 7 * 24 * 60 * 60,
-      capturedAt: new Date(now - 1_000).toISOString(),
-      source: "opencodex-quota-cache" as const,
-    }),
+    () =>
+      quotaAvailable
+        ? {
+            remainingPercent: 97,
+            usedPercent: 3,
+            windowDurationMins: 10_080,
+            resetsAt: Math.floor(now / 1_000) + 7 * 24 * 60 * 60,
+            capturedAt: new Date(now - 1_000).toISOString(),
+            source: "opencodex-quota-cache" as const,
+          }
+        : null,
+    () => true,
   );
 
   try {
@@ -98,6 +103,11 @@ test("uses the OpenCodex quota cache instead of a synthetic rollout window", asy
     await snapshotPromise;
     assert.equal(snapshot.usage.weekly?.remainingPercent, 97);
     assert.equal(snapshot.usage.weekly?.source, "opencodex-quota-cache");
+
+    quotaAvailable = false;
+    await monitor.refreshNow();
+    assert.equal(monitor.snapshot.usage.status, "unavailable");
+    assert.equal(monitor.snapshot.usage.weekly, null);
   } finally {
     monitor.stop();
   }

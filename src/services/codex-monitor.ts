@@ -79,6 +79,7 @@ export type CodexProcessDetector = () => Promise<boolean>;
 export type OpenCodexQuotaReader = (
   now: number,
 ) => UsageWindowSnapshot | null;
+export type OpenCodexQuotaConfiguredReader = () => boolean;
 
 const RELEVANT_ROLLOUT_LINE =
   /"type"\s*:\s*"(?:task_started|task_complete|turn_aborted|error|token_count|function_call|function_call_output)"|request_user_input/;
@@ -217,6 +218,7 @@ export class CodexMonitor {
   readonly #hookEvents: HookEventStore;
   readonly #detectCodexProcess: CodexProcessDetector;
   readonly #readOpenCodexQuota: OpenCodexQuotaReader;
+  readonly #isOpenCodexQuotaConfigured: OpenCodexQuotaConfiguredReader;
   readonly #sessions = new Map<string, TrackedSession>();
   readonly #reviewAcknowledgements = new Map<string, number>();
   readonly #listeners = new Set<(snapshot: CodexMonitorSnapshot) => void>();
@@ -237,11 +239,13 @@ export class CodexMonitor {
     windowsSessionStartedAt = Date.now() - uptime() * 1_000,
     reviewAcknowledgements: Readonly<Record<string, number>> = {},
     readOpenCodexQuota: OpenCodexQuotaReader = () => null,
+    isOpenCodexQuotaConfigured: OpenCodexQuotaConfiguredReader = () => false,
   ) {
     this.#repository = repository;
     this.#hookEvents = hookEvents;
     this.#detectCodexProcess = processDetector;
     this.#readOpenCodexQuota = readOpenCodexQuota;
+    this.#isOpenCodexQuotaConfigured = isOpenCodexQuotaConfigured;
     this.#windowsSessionStartedAt = Math.max(
       0,
       Math.floor(windowsSessionStartedAt),
@@ -536,7 +540,9 @@ export class CodexMonitor {
     const selectedUsageEntry =
       openCodexUsage !== null
         ? { usage: openCodexUsage, rolloutReadable: true }
-        : latestUsageEntry;
+        : this.#isOpenCodexQuotaConfigured()
+          ? null
+          : latestUsageEntry;
     const usage =
       selectedUsageEntry !== null && !selectedUsageEntry.rolloutReadable
         ? {

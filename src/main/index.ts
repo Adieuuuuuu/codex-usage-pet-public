@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -844,6 +845,7 @@ const bootstrap = async (): Promise<void> => {
     undefined,
     preferences.value.reviewAcknowledgements,
     (now) => readOpenCodexQuota(opencodexQuotaPath, now),
+    () => existsSync(opencodexQuotaPath),
   );
   try {
     const environmentEndpoint =
