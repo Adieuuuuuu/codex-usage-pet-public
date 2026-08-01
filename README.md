@@ -49,6 +49,25 @@ desktop pet show the real local state, and use the phone notification to know
 when the task is running, waiting, complete, or failed. The same glance also
 shows remaining usage, the reset date, and the tasks that still need attention.
 
+There is a second, practical advantage: the desktop companion reads Codex
+Desktop's local state directly, in read-only mode, and looks in the existing
+Codex pet directory (`~/.codex/pets`) for standard Hatch Pet packages. Your
+familiar desktop pet can come with you instead of being recreated in a second
+app. A valid user-installed package takes precedence over the bundled fallback,
+so the first run is closer to launch-and-go: no manual export, asset conversion,
+or copy-and-paste bridge.
+
+This also started from a distinction between remote control and status
+monitoring. Official Codex Remote is useful for sending work, but network
+round trips can make the experience feel slow, and it is not a window into the
+computer's local frontend previews, IDEs, terminals, or other desktop context.
+For hands-on work, a remote desktop tool can control the actual computer more
+directly, clearly, and quickly. Usage Pet complements that setup: it does not
+replace remote control or stream the desktop to the phone; it reads local
+Codex state and pushes timely task progress. The remote desktop handles
+“control the computer,” while Usage Pet handles “tell me what the task is
+doing,” without making Codex Remote the monitoring channel.
+
 Read the full story in [Why Codex Usage Pet exists](docs/development-story.md).
 
 ## What you get
