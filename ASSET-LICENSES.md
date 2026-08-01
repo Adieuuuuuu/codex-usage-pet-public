@@ -13,7 +13,6 @@ under the [Creative Commons Attribution 4.0 International license](https://creat
 - `assets/pets/zhima-3/pet.json`
 - `assets/pets/zhima-3/spritesheet.webp`
 - `assets/icon.png`
-- `docs/images/desktop-usage-pet-reference.png`
 
 Attribution: `Zhima 3 pet artwork by Adie, from Codex Usage Pet`.
 
@@ -23,12 +22,18 @@ Do not infer permission for any different private source material.
 
 ## Public UI screenshots
 
-`docs/images/android-companion-production.png` is an original emulator capture
-from this project. It is published under CC BY 4.0 with attribution:
-`Codex Usage Pet Mobile UI by Adie`.
+The following runtime captures were supplied by the project owner and are
+authorized for publication in this repository:
 
-The screenshots are design and implementation references, not proof that every
-OS, vendor skin, permission state, or physical device has passed acceptance.
+- `docs/images/desktop-live-runtime.png`
+- `docs/images/android-notification-runtime.jpg`
+- `docs/images/android-app-runtime.jpg`
+
+This publication permission does not place the screenshots under the MIT
+License or grant permission to reuse any task, device, or third-party UI
+content shown in them. The screenshots are design and implementation
+references, not proof that every OS, vendor skin, permission state, or physical
+device has passed acceptance.
 
 ## Public notification sound
 

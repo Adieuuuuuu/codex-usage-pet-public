@@ -97,13 +97,19 @@ rollouts, and local paths are not part of the phone snapshot.
 
 ## Reference surfaces
 
-![Desktop Usage Pet reference](docs/images/desktop-usage-pet-reference.png)
+<p align="center">
+  <img src="docs/images/desktop-live-runtime.png" alt="Desktop Usage Pet live runtime" width="420">
+</p>
 
-![Android companion production surface](docs/images/android-companion-production.png)
+<p align="center">
+  <img src="docs/images/android-notification-runtime.jpg" alt="Android notification runtime" width="280">
+  <img src="docs/images/android-app-runtime.jpg" alt="Android app runtime" width="280">
+</p>
 
-These public images are implementation references with cleared provenance. They
-contain no endpoint, pairing secret, private task title, prompt, or response.
-They do not replace Xiaomi physical-device acceptance.
+These public images are project-owner-provided runtime captures. They document
+the desktop surface, notification delivery, and Android task list at one point
+in time; they do not replace Xiaomi physical-device acceptance. Review and
+redact local task or device details before publishing a different capture.
 
 ## Architecture
 
@@ -232,9 +238,9 @@ build, and start the desktop app. A valid user-installed package under the
 user's Codex pet directory takes precedence when it uses the same ID.
 
 A custom pet remains optional. Validate its manifest, atlas dimensions, and
-license before packaging or redistribution. The two public screenshots under
-`docs/images/` document the accepted content hierarchy and the Android 0.3.0
-production surface. See the [visual reference guide](docs/visual-reference-guide.md)
+license before packaging or redistribution. The three public runtime images
+under `docs/images/` document the desktop surface, notification delivery, and
+Android task list. See the [visual reference guide](docs/visual-reference-guide.md)
 and [asset licenses](ASSET-LICENSES.md).
 
 ## Privacy and honest boundaries

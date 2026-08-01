@@ -20,19 +20,20 @@ Drag and click behavior must remain distinct.
 
 ## Public reference images
 
-This public snapshot contains two deliberately scoped images:
+This public snapshot contains three deliberately scoped runtime captures:
 
-- [desktop-usage-pet-reference.png](images/desktop-usage-pet-reference.png):
-  accepted desktop content-hierarchy reference;
-- [android-companion-production.png](images/android-companion-production.png):
-  API 36 emulator capture of Android 0.3.0 after prototype controls were removed
-  and system-bar/display-cutout insets were applied.
+- [desktop-live-runtime.png](images/desktop-live-runtime.png): desktop usage
+  capsule and live task-list capture;
+- [android-notification-runtime.jpg](images/android-notification-runtime.jpg):
+  Android notification capture;
+- [android-app-runtime.jpg](images/android-app-runtime.jpg): Android app task
+  list and connected-state capture.
 
-The images contain no real task title, endpoint, room ID, pairing material,
-device token, prompt, or response. They document one implementation and test
-moment. They do not prove long-duration animation, Xiaomi/HyperOS physical
-behavior, other Android vendors, macOS, or iOS. Provenance and terms are in the
-root [asset license record](../ASSET-LICENSES.md).
+The images are project-owner-provided runtime captures. They document one
+implementation moment and do not prove long-duration animation, Xiaomi/HyperOS
+physical behavior, other Android vendors, macOS, or iOS. Check local task and
+device details before publishing another capture. Provenance and terms are in
+the root [asset license record](../ASSET-LICENSES.md).
 
 ## How an Agent should use references
 

@@ -83,12 +83,18 @@ Usage Pet 负责“告诉你任务进展”，不需要再依赖 Codex Remote �
 
 ## 公开版参考界面
 
-![桌面 Usage Pet 参考图](docs/images/desktop-usage-pet-reference.png)
+<p align="center">
+  <img src="docs/images/desktop-live-runtime.png" alt="桌面 Usage Pet 实际运行图" width="420">
+</p>
 
-![Android 手机端正式界面](docs/images/android-companion-production.png)
+<p align="center">
+  <img src="docs/images/android-notification-runtime.jpg" alt="Android 通知实际运行图" width="280">
+  <img src="docs/images/android-app-runtime.jpg" alt="Android App 实际运行图" width="280">
+</p>
 
-这两张图只作为已经清理来源和隐私的实现参考，不包含 endpoint、配对秘密、
-真实任务标题、提示词或回复正文，也不能替代小米真机验收。
+这三张图是项目所有者提供的实际运行截图，用来展示桌面端、通知推送和 Android
+任务列表在某一时刻的真实界面；它们不能替代小米真机验收。再次发布其他截图前，
+请先检查并遮盖其中可能出现的本地任务或设备信息。
 
 ## 架构
 
@@ -212,7 +218,7 @@ Usage Pet 读取标准 Hatch Pet 包：`pet.json` 加 `spritesheet.webp`。
 有效用户安装包会按现有优先级覆盖内置包。
 
 自定义桌宠仍然是可选项。打包或再次分发前要验证 manifest、图集尺寸和许可。
-`docs/images/` 中两张公开图记录了桌面信息层级与 Android 0.3.0 正式界面。
+`docs/images/` 中三张公开运行图记录了桌面端、通知推送和 Android 任务列表。
 详细边界见[参考图与桌宠素材说明](docs/visual-reference-guide.md)和
 [素材许可说明](ASSET-LICENSES.md)。
 

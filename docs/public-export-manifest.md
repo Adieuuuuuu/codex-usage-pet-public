@@ -88,9 +88,10 @@ atlas, and excludes the private source photograph and generation intermediates.
 The derived application icon shares that asset license.
 
 The private Clawd reference sound is not present. The public snapshot replaces
-it with a new two-tone synthesized MP3 and records CC0 terms. Public screenshots
-are scoped, privacy-reviewed references with CC BY 4.0 attribution. The Gradle
-wrapper remains under Gradle's upstream Apache-2.0 terms. See
+it with a new two-tone synthesized MP3 and records CC0 terms. The current public
+runtime screenshots were supplied by the project owner for publication and are
+not covered by the MIT source license. The Gradle wrapper remains under
+Gradle's upstream Apache-2.0 terms. See
 [`ASSET-LICENSES.md`](../ASSET-LICENSES.md).
 
 ## Publication gates
