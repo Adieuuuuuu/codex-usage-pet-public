@@ -17,7 +17,7 @@ export interface UsageWindowSnapshot {
   windowDurationMins: number;
   resetsAt: number;
   capturedAt: string;
-  source: "rollout";
+  source: "rollout" | "opencodex-quota-cache";
 }
 
 export interface UsageSnapshot {

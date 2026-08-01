@@ -33,6 +33,7 @@ import {
 } from "../shared/contracts.ts";
 import { CodexMonitor } from "../services/codex-monitor.ts";
 import { HookEventStore } from "../services/hook-event-store.ts";
+import { readOpenCodexQuota } from "../services/opencodex-quota.ts";
 import {
   PetPackRegistry,
   type ResolvedPetPack,
@@ -801,6 +802,12 @@ const bootstrap = async (): Promise<void> => {
 
   const codexHome =
     process.env.CODEX_HOME?.trim() || join(homedir(), ".codex");
+  const opencodexHome =
+    process.env.OPENCODEX_HOME?.trim() || join(homedir(), ".opencodex");
+  const opencodexQuotaPath = join(
+    opencodexHome,
+    "codex-quota-cache.json",
+  );
   const userData = app.getPath("userData");
   const packagedPetRoot = app.isPackaged
     ? join(process.resourcesPath, "pets")
@@ -836,6 +843,7 @@ const bootstrap = async (): Promise<void> => {
     undefined,
     undefined,
     preferences.value.reviewAcknowledgements,
+    (now) => readOpenCodexQuota(opencodexQuotaPath, now),
   );
   try {
     const environmentEndpoint =

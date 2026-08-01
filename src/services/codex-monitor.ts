@@ -76,6 +76,9 @@ const PENDING_HOOK_MAX_AGE_MS = 10 * 60 * 1_000;
 const PENDING_HOOK_MAX_EVENTS = 256;
 
 export type CodexProcessDetector = () => Promise<boolean>;
+export type OpenCodexQuotaReader = (
+  now: number,
+) => UsageWindowSnapshot | null;
 
 const RELEVANT_ROLLOUT_LINE =
   /"type"\s*:\s*"(?:task_started|task_complete|turn_aborted|error|token_count|function_call|function_call_output)"|request_user_input/;
@@ -213,6 +216,7 @@ export class CodexMonitor {
   readonly #repository: ThreadRepository;
   readonly #hookEvents: HookEventStore;
   readonly #detectCodexProcess: CodexProcessDetector;
+  readonly #readOpenCodexQuota: OpenCodexQuotaReader;
   readonly #sessions = new Map<string, TrackedSession>();
   readonly #reviewAcknowledgements = new Map<string, number>();
   readonly #listeners = new Set<(snapshot: CodexMonitorSnapshot) => void>();
@@ -232,10 +236,12 @@ export class CodexMonitor {
     processDetector: CodexProcessDetector = detectCodexProcess,
     windowsSessionStartedAt = Date.now() - uptime() * 1_000,
     reviewAcknowledgements: Readonly<Record<string, number>> = {},
+    readOpenCodexQuota: OpenCodexQuotaReader = () => null,
   ) {
     this.#repository = repository;
     this.#hookEvents = hookEvents;
     this.#detectCodexProcess = processDetector;
+    this.#readOpenCodexQuota = readOpenCodexQuota;
     this.#windowsSessionStartedAt = Math.max(
       0,
       Math.floor(windowsSessionStartedAt),
@@ -521,15 +527,25 @@ export class CodexMonitor {
           Date.parse(right.usage.capturedAt) -
           Date.parse(left.usage.capturedAt),
       )[0] ?? null;
+    let openCodexUsage: UsageWindowSnapshot | null = null;
+    try {
+      openCodexUsage = this.#readOpenCodexQuota(now);
+    } catch {
+      openCodexUsage = null;
+    }
+    const selectedUsageEntry =
+      openCodexUsage !== null
+        ? { usage: openCodexUsage, rolloutReadable: true }
+        : latestUsageEntry;
     const usage =
-      latestUsageEntry !== null && !latestUsageEntry.rolloutReadable
+      selectedUsageEntry !== null && !selectedUsageEntry.rolloutReadable
         ? {
             status: "unavailable" as const,
             weekly: null,
             reason: "The latest Codex usage source is temporarily unreadable.",
           }
         : evaluateWeeklyRateLimit(
-            latestUsageEntry?.usage ?? null,
+            selectedUsageEntry?.usage ?? null,
             now,
           );
 

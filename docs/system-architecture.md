@@ -35,6 +35,14 @@ privacy, task semantics, and end-to-end acceptance must change atomically.
 - Android: protected pairing storage; connection lifecycle; decryption and
   replay protection; last-good snapshot; alert deduplication; notification UI.
 
+## OpenCodex quota compatibility
+
+When the desktop is routed through OpenCodex, the monitor reads the fresh local
+`codex-quota-cache.json` main-account weekly window. Its `weeklyPercent` value
+is treated as used percentage and converted to remaining percentage for the
+display. The rollout `token_count.rate_limits` value remains a fallback for
+native Codex or when the OpenCodex cache is missing, invalid, stale, or reset.
+
 ## Compatibility contract
 
 Protocol changes require all of the following:
