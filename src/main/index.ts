@@ -2,6 +2,8 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { HttpsProxyAgent } from "https-proxy-agent";
+import WebSocket from "ws";
 import {
   app,
   clipboard,
@@ -46,6 +48,7 @@ import {
 import {
   PhoneSyncPublisher,
   type PhoneSyncStatus,
+  type PhoneSyncWebSocket,
 } from "../services/phone-sync-publisher.ts";
 import {
   loadPhoneRelayConfig,
@@ -88,6 +91,7 @@ let preferences: PreferencesStore | null = null;
 let phoneSyncStore: PhoneSyncStore | null = null;
 let phoneSyncPublisher: PhoneSyncPublisher | null = null;
 let phoneRelayEndpoint: string | null = null;
+let phoneRelayProxy: string | null = null;
 let pairingClipboardTimer: NodeJS.Timeout | null = null;
 let copiedPairingCode: string | null = null;
 let resumeRecovery: Promise<void> | null = null;
@@ -843,6 +847,7 @@ const bootstrap = async (): Promise<void> => {
       environmentEndpoint !== undefined && environmentEndpoint !== ""
         ? normalizeRelayEndpoint(environmentEndpoint)
         : (relayConfig?.endpoint ?? null);
+    phoneRelayProxy = relayConfig?.proxy ?? null;
     if (relayConfig?.proxy !== null && relayConfig?.proxy !== undefined) {
       await session.defaultSession.setProxy({
         proxyRules: relayConfig.proxy,
@@ -850,6 +855,7 @@ const bootstrap = async (): Promise<void> => {
     }
   } catch {
     phoneRelayEndpoint = null;
+    phoneRelayProxy = null;
   }
   phoneSyncStore = new PhoneSyncStore(
     join(userData, "phone-sync.json"),
@@ -864,6 +870,24 @@ const bootstrap = async (): Promise<void> => {
     store: phoneSyncStore,
     fetch: (input, init) =>
       net.fetch(input instanceof URL ? input.toString() : input, init),
+    createWebSocket: (url) => new WebSocket(url, {
+      agent:
+        phoneRelayProxy === null
+          ? undefined
+          : new HttpsProxyAgent(phoneRelayProxy),
+      handshakeTimeout: 10_000,
+      maxPayload: 1_024,
+      perMessageDeflate: false,
+    }) as unknown as PhoneSyncWebSocket,
+    onRefreshRequested: async () => {
+      const activeMonitor = monitor;
+      const activePublisher = phoneSyncPublisher;
+      if (activeMonitor === null || activePublisher === null) {
+        return;
+      }
+      await activeMonitor.refreshNow(true);
+      activePublisher.recover(activeMonitor.snapshot);
+    },
     onStatus: (_status: PhoneSyncStatus) => {
       refreshPhoneSyncMenus();
     },

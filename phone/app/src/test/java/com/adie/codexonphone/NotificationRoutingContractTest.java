@@ -7,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -72,6 +73,43 @@ public final class NotificationRoutingContractTest {
 
         assertTrue(source.contains("if (!foregroundStarted) {"));
         assertTrue(source.contains("foregroundStarted = true;"));
+    }
+
+    @Test
+    public void legacyChannelsAreRemovedWithoutRotatingCurrentChannels()
+            throws Exception {
+        assertEquals(
+                "codex_task_status_v1",
+                NotificationPublisher.LEGACY_QUIET_CHANNEL_ID
+        );
+        assertEquals(
+                "codex_task_alerts_v1",
+                NotificationPublisher.LEGACY_ALERT_CHANNEL_ID
+        );
+
+        String source = source(
+                "src/main/java/com/adie/codexonphone/NotificationPublisher.java"
+        );
+        assertTrue(source.contains(
+                "manager.deleteNotificationChannel(LEGACY_QUIET_CHANNEL_ID);"
+        ));
+        assertTrue(source.contains(
+                "manager.deleteNotificationChannel(LEGACY_ALERT_CHANNEL_ID);"
+        ));
+        String activity = source(
+                "src/main/java/com/adie/codexonphone/MainActivity.java"
+        );
+        assertTrue(activity.contains(
+                "NotificationPublisher.initializeChannels(this);"
+        ));
+        assertTrue(source.contains(
+                "private static final String QUIET_CHANNEL_ID = \"codex_task_status_v2\";"
+        ));
+        assertTrue(source.contains(
+                "private static final String ALERT_CHANNEL_ID = \"codex_task_alerts_v2\";"
+        ));
+        assertFalse(source.contains("codex_task_status_v3"));
+        assertFalse(source.contains("codex_task_alerts_v3"));
     }
 
     private static String between(

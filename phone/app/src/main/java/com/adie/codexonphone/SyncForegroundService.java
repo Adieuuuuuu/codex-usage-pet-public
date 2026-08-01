@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import java.security.GeneralSecurityException;
 import java.util.concurrent.TimeUnit;
+import java.util.UUID;
 
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -26,12 +27,16 @@ public final class SyncForegroundService extends Service {
             "com.adie.codexonphone.action.START_SYNC";
     public static final String ACTION_STOP =
             "com.adie.codexonphone.action.STOP_SYNC";
+    public static final String ACTION_REFRESH =
+            "com.adie.codexonphone.action.REFRESH_SYNC";
 
     private static final int POLICY_VIOLATION_CLOSE_CODE = 1008;
     private static final int MAX_RELAY_MESSAGE_CHARS = 64 * 1024;
     private static final long MAX_RECONNECT_DELAY_MS = 60_000L;
     private static final long DESKTOP_STALE_AFTER_MS = 10 * 60_000L;
     private static final long STALE_RECONNECT_INTERVAL_MS = 5 * 60_000L;
+    private static final long REFRESH_TIMEOUT_MS = 15_000L;
+    private static final long REFRESH_RESULT_VISIBLE_MS = 3_000L;
 
     private final Handler handler = new Handler(Looper.getMainLooper());
     private final Runnable reconnect = this::connect;
@@ -44,7 +49,16 @@ public final class SyncForegroundService extends Service {
     private boolean foregroundStarted;
     private boolean networkCallbackRegistered;
     private boolean awaitingInitialEnvelope;
+    private boolean socketAuthenticated;
     private boolean stopping;
+    private String pendingRefreshRequestId;
+    private long pendingRefreshBaselineSequence;
+    private boolean refreshForwarded;
+    private boolean refreshSnapshotObserved;
+    private boolean refreshRequestSent;
+    private final Runnable refreshTimeout = () -> finishRefresh("timeout");
+    private final Runnable resetRefreshState = () ->
+            SyncStateStore.setRefreshState(this, "idle");
     private final ConnectivityManager.NetworkCallback networkCallback =
             new ConnectivityManager.NetworkCallback() {
                 @Override
@@ -103,6 +117,12 @@ public final class SyncForegroundService extends Service {
         context.startService(intent);
     }
 
+    public static void requestRefresh(Context context) {
+        Intent intent = new Intent(context, SyncForegroundService.class)
+                .setAction(ACTION_REFRESH);
+        context.startForegroundService(intent);
+    }
+
     @Override
     public void onCreate() {
         super.onCreate();
@@ -158,6 +178,9 @@ public final class SyncForegroundService extends Service {
         )) {
             restartConnection();
         }
+        if (intent != null && ACTION_REFRESH.equals(intent.getAction())) {
+            beginManualRefresh();
+        }
         return START_STICKY;
     }
 
@@ -192,6 +215,7 @@ public final class SyncForegroundService extends Service {
                 .url(pairing.eventsUri().toString())
                 .build();
         awaitingInitialEnvelope = true;
+        socketAuthenticated = false;
         webSocket = client.newWebSocket(request, new Listener());
     }
 
@@ -201,6 +225,8 @@ public final class SyncForegroundService extends Service {
         WebSocket socket = webSocket;
         webSocket = null;
         awaitingInitialEnvelope = true;
+        socketAuthenticated = false;
+        cancelManualRefresh();
         if (socket != null) {
             socket.close(1000, "client stopping");
             socket.cancel();
@@ -211,6 +237,8 @@ public final class SyncForegroundService extends Service {
         WebSocket socket = webSocket;
         webSocket = null;
         awaitingInitialEnvelope = true;
+        socketAuthenticated = false;
+        refreshRequestSent = false;
         if (socket != null) {
             socket.cancel();
         }
@@ -234,11 +262,120 @@ public final class SyncForegroundService extends Service {
         handler.removeCallbacks(markDesktopStale);
         handler.removeCallbacks(reconnect);
         webSocket = null;
+        socketAuthenticated = false;
+        refreshRequestSent = false;
         SyncStateStore.setConnectionState(this, "offline");
         long multiplier = 1L << Math.min(reconnectAttempt, 6);
         long delay = Math.min(MAX_RECONNECT_DELAY_MS, 1_000L * multiplier);
         reconnectAttempt++;
         handler.postDelayed(reconnect, delay);
+    }
+
+    private void beginManualRefresh() {
+        if (pendingRefreshRequestId != null || pairing == null) {
+            return;
+        }
+        handler.removeCallbacks(resetRefreshState);
+        pendingRefreshRequestId = UUID.randomUUID().toString();
+        refreshForwarded = false;
+        refreshSnapshotObserved = false;
+        refreshRequestSent = false;
+        SyncStateStore.setRefreshState(this, "requesting");
+        handler.removeCallbacks(refreshTimeout);
+        handler.postDelayed(refreshTimeout, REFRESH_TIMEOUT_MS);
+        if (webSocket == null) {
+            connect();
+        } else if (socketAuthenticated) {
+            sendPendingRefresh();
+        }
+    }
+
+    private void sendPendingRefresh() {
+        WebSocket socket = webSocket;
+        if (
+                pendingRefreshRequestId == null ||
+                socket == null ||
+                !socketAuthenticated ||
+                refreshRequestSent
+        ) {
+            return;
+        }
+        pendingRefreshBaselineSequence =
+                SyncStateStore.loadSnapshot(this).sequence();
+        refreshForwarded = false;
+        refreshSnapshotObserved = false;
+        try {
+            boolean sent = socket.send(new JSONObject()
+                    .put("type", "refresh_request")
+                    .put("version", 1)
+                    .put("requestId", pendingRefreshRequestId)
+                    .toString());
+            if (!sent) {
+                restartConnection();
+                return;
+            }
+            refreshRequestSent = true;
+        } catch (JSONException error) {
+            finishRefresh("timeout");
+        }
+    }
+
+    private void handleRefreshResult(JSONObject message) throws JSONException {
+        if (
+                pendingRefreshRequestId == null ||
+                message.length() != 4 ||
+                !pendingRefreshRequestId.equals(message.getString("requestId")) ||
+                message.getInt("version") != 1
+        ) {
+            return;
+        }
+        String result = message.getString("result");
+        if ("forwarded".equals(result)) {
+            refreshForwarded = true;
+            SyncStateStore.setRefreshState(this, "refreshing");
+            completeRefreshIfReady();
+        } else if ("desktop_unavailable".equals(result)) {
+            finishRefresh("desktop_unavailable");
+        } else if ("throttled".equals(result)) {
+            finishRefresh("throttled");
+        }
+    }
+
+    private void observeRefreshSnapshot(long sequence) {
+        if (
+                pendingRefreshRequestId != null &&
+                sequence > pendingRefreshBaselineSequence
+        ) {
+            refreshSnapshotObserved = true;
+            completeRefreshIfReady();
+        }
+    }
+
+    private void completeRefreshIfReady() {
+        if (refreshForwarded && refreshSnapshotObserved) {
+            finishRefresh("success");
+        }
+    }
+
+    private void finishRefresh(String state) {
+        handler.removeCallbacks(refreshTimeout);
+        pendingRefreshRequestId = null;
+        refreshForwarded = false;
+        refreshSnapshotObserved = false;
+        refreshRequestSent = false;
+        SyncStateStore.setRefreshState(this, state);
+        handler.removeCallbacks(resetRefreshState);
+        handler.postDelayed(resetRefreshState, REFRESH_RESULT_VISIBLE_MS);
+    }
+
+    private void cancelManualRefresh() {
+        handler.removeCallbacks(refreshTimeout);
+        handler.removeCallbacks(resetRefreshState);
+        pendingRefreshRequestId = null;
+        refreshForwarded = false;
+        refreshSnapshotObserved = false;
+        refreshRequestSent = false;
+        SyncStateStore.setRefreshState(this, "idle");
     }
 
     private void acceptEnvelope(JSONObject envelope, boolean allowAlert)
@@ -261,6 +398,7 @@ public final class SyncForegroundService extends Service {
         boolean alert = allowAlert
                 && next.hasAttentionTransitionComparedWith(previous);
         SyncStateStore.saveSnapshot(this, next);
+        observeRefreshSnapshot(next.sequence());
         updateDesktopFreshness(next);
         NotificationPublisher.publish(this, next, alert);
     }
@@ -339,8 +477,14 @@ public final class SyncForegroundService extends Service {
                 }
                 if ("snapshot".equals(type)) {
                     reconnectAttempt = 0;
+                    socketAuthenticated = true;
                     JSONObject envelope = message.getJSONObject("envelope");
                     acceptInitialOrLiveEnvelope(envelope);
+                    sendPendingRefresh();
+                    return;
+                }
+                if ("refresh_result".equals(type)) {
+                    handleRefreshResult(message);
                 }
             } catch (JSONException | GeneralSecurityException
                      | IllegalArgumentException error) {

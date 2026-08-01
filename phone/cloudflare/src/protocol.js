@@ -3,6 +3,7 @@ export const MAX_SEQUENCE = Number.MAX_SAFE_INTEGER;
 export const MAX_PUBLISH_BODY_BYTES = 48 * 1024;
 export const MAX_CIPHERTEXT_BYTES = 32 * 1024;
 export const MAX_AUTH_FRAME_BYTES = 256;
+export const MAX_CONTROL_FRAME_BYTES = 256;
 
 const BASE64URL_PATTERN = /^[A-Za-z0-9_-]+$/;
 const BASE64URL_ALPHABET =
@@ -110,17 +111,64 @@ export function validateAuthFrame(message) {
     throw new RelayError(400, "invalid_auth_frame");
   }
 
+  if (!isPlainObject(value)) {
+    throw new RelayError(400, "invalid_auth_frame");
+  }
+  const hasLegacyKeys = hasExactKeys(value, ["type", "version", "token"]);
+  const hasRoleKeys = hasExactKeys(value, [
+    "type",
+    "version",
+    "token",
+    "role",
+  ]);
   if (
-    !isPlainObject(value) ||
-    !hasExactKeys(value, ["type", "version", "token"]) ||
+    (!hasLegacyKeys && !hasRoleKeys) ||
     value.type !== "auth" ||
     value.version !== PROTOCOL_VERSION ||
-    !isCanonicalBase64Url(value.token, 32)
+    !isCanonicalBase64Url(value.token, 32) ||
+    (hasRoleKeys && value.role !== "phone" && value.role !== "desktop")
   ) {
     throw new RelayError(400, "invalid_auth_frame");
   }
 
-  return value.token;
+  return {
+    token: value.token,
+    role: hasRoleKeys ? value.role : "phone",
+  };
+}
+
+export function validateRefreshRequestFrame(message) {
+  if (
+    typeof message !== "string" ||
+    new TextEncoder().encode(message).byteLength > MAX_CONTROL_FRAME_BYTES
+  ) {
+    throw new RelayError(400, "invalid_refresh_request");
+  }
+
+  let value;
+  try {
+    value = JSON.parse(message);
+  } catch {
+    throw new RelayError(400, "invalid_refresh_request");
+  }
+
+  if (
+    !isPlainObject(value) ||
+    !hasExactKeys(value, ["type", "version", "requestId"]) ||
+    value.type !== "refresh_request" ||
+    value.version !== PROTOCOL_VERSION ||
+    typeof value.requestId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu
+      .test(value.requestId)
+  ) {
+    throw new RelayError(400, "invalid_refresh_request");
+  }
+
+  return {
+    type: "refresh_request",
+    version: PROTOCOL_VERSION,
+    requestId: value.requestId.toLowerCase(),
+  };
 }
 
 export async function readBoundedJson(request) {
@@ -210,6 +258,15 @@ export function constantTimeEqual(left, right) {
 
 export function snapshotFrame(envelopeJson) {
   return `{"type":"snapshot","envelope":${envelopeJson}}`;
+}
+
+export function refreshResultFrame(requestId, result) {
+  return JSON.stringify({
+    type: "refresh_result",
+    version: PROTOCOL_VERSION,
+    requestId,
+    result,
+  });
 }
 
 export function jsonResponse(status, body, extraHeaders = {}) {

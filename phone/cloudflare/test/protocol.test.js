@@ -11,6 +11,7 @@ import {
   readBoundedJson,
   validateAuthFrame,
   validateEnvelope,
+  validateRefreshRequestFrame,
 } from "../src/protocol.js";
 
 const ROOM_ID = base64url(16, 1);
@@ -99,7 +100,19 @@ test("reads bounded JSON and rejects unsupported or oversized bodies", async () 
 
 test("requires the exact first-frame authentication shape", () => {
   const frame = JSON.stringify({ type: "auth", version: 1, token: TOKEN });
-  assert.equal(validateAuthFrame(frame), TOKEN);
+  assert.deepEqual(validateAuthFrame(frame), {
+    token: TOKEN,
+    role: "phone",
+  });
+  assert.deepEqual(validateAuthFrame(JSON.stringify({
+    type: "auth",
+    version: 1,
+    token: TOKEN,
+    role: "desktop",
+  })), {
+    token: TOKEN,
+    role: "desktop",
+  });
   assert.throws(
     () =>
       validateAuthFrame(
@@ -111,6 +124,25 @@ test("requires the exact first-frame authentication shape", () => {
         }),
       ),
     (error) => relayError(error, 400, "invalid_auth_frame"),
+  );
+});
+
+test("accepts only bounded version-4 refresh request IDs", () => {
+  const request = {
+    type: "refresh_request",
+    version: 1,
+    requestId: "8d573f92-b480-4cd7-84ad-8eb6ce239318",
+  };
+  assert.deepEqual(
+    validateRefreshRequestFrame(JSON.stringify(request)),
+    request,
+  );
+  assert.throws(
+    () => validateRefreshRequestFrame(JSON.stringify({
+      ...request,
+      plaintext: "must not pass",
+    })),
+    (error) => relayError(error, 400, "invalid_refresh_request"),
   );
 });
 

@@ -250,6 +250,16 @@ export const phoneSnapshotUrl = (
 ): string =>
   `${pairing.endpoint}/v1/rooms/${pairing.roomId}/snapshot`;
 
+export const phoneEventsUrl = (
+  pairing: PhonePairingMaterial,
+): string => {
+  validatePairing(pairing);
+  const endpoint = new URL(pairing.endpoint);
+  endpoint.protocol = endpoint.protocol === "https:" ? "wss:" : "ws:";
+  endpoint.pathname = `/v1/rooms/${pairing.roomId}/events`;
+  return endpoint.toString();
+};
+
 export const normalizeRelayEndpoint = (value: string): string => {
   const url = new URL(value.trim());
   const localHttp =

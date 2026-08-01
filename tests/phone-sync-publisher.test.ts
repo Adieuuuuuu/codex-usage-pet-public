@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -12,6 +12,7 @@ import {
 import {
   PhoneSyncPublisher,
   type PhoneSyncStatus,
+  type PhoneSyncWebSocket,
 } from "../src/services/phone-sync-publisher.ts";
 import {
   PhoneSyncStore,
@@ -272,3 +273,102 @@ test("does not let an in-flight old pairing supersede a rotated pairing", async 
   ]);
   publisher.stop();
 });
+
+test("authenticates the desktop control socket and handles one refresh at a time", async () => {
+  const store = new PhoneSyncStore(
+    join(temporaryRoot, "publisher-refresh-control.json"),
+    protector,
+  );
+  const pairing = store.createPairing("https://relay.example.workers.dev");
+  const sockets: FakeWebSocket[] = [];
+  let refreshCount = 0;
+  let finishRefresh!: () => void;
+  const refreshGate = new Promise<void>((resolve) => {
+    finishRefresh = resolve;
+  });
+  const publisher = new PhoneSyncPublisher({
+    store,
+    fetch: (async () =>
+      new Response('{"ok":true}', { status: 200 })) as typeof fetch,
+    createWebSocket: (url) => {
+      const socket = new FakeWebSocket(url);
+      sockets.push(socket);
+      return socket;
+    },
+    onRefreshRequested: async () => {
+      refreshCount += 1;
+      await refreshGate;
+    },
+  });
+
+  publisher.update(snapshot());
+  const socket = sockets[0];
+  assert.ok(socket);
+  assert.equal(
+    socket.url,
+    `wss://relay.example.workers.dev/v1/rooms/${pairing.roomId}/events`,
+  );
+  socket.open();
+  const auth = JSON.parse(socket.sent[0] ?? "null");
+  assert.equal(auth.type, "auth");
+  assert.equal(auth.role, "desktop");
+  assert.equal(typeof auth.token, "string");
+
+  const request = JSON.stringify({
+    type: "refresh_request",
+    version: 1,
+    requestId: "8d573f92-b480-4cd7-84ad-8eb6ce239318",
+  });
+  socket.message(request);
+  socket.message(request);
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  assert.equal(refreshCount, 1);
+  finishRefresh();
+  publisher.stop();
+  assert.equal(socket.closed, true);
+});
+
+test("desktop refresh requests rescan Codex before forcing a new envelope", () => {
+  const main = readFileSync(
+    join(process.cwd(), "src", "main", "index.ts"),
+    "utf8",
+  );
+  assert.match(main, /await activeMonitor\.refreshNow\(true\);/u);
+  assert.match(
+    main,
+    /activePublisher\.recover\(activeMonitor\.snapshot\);/u,
+  );
+});
+
+class FakeWebSocket implements PhoneSyncWebSocket {
+  readonly url: string;
+  readonly sent: string[] = [];
+  readyState = 0;
+  closed = false;
+  onopen: (() => void) | null = null;
+  onmessage: ((event: { data: unknown }) => void) | null = null;
+  onclose: (() => void) | null = null;
+  onerror: (() => void) | null = null;
+
+  constructor(url: string) {
+    this.url = url;
+  }
+
+  open(): void {
+    this.readyState = 1;
+    this.onopen?.();
+  }
+
+  message(data: string): void {
+    this.onmessage?.({ data });
+  }
+
+  send(data: string): void {
+    this.sent.push(data);
+  }
+
+  close(): void {
+    this.closed = true;
+    this.readyState = 3;
+  }
+}

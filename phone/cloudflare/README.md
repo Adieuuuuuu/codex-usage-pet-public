@@ -12,10 +12,12 @@ master secret or encryption key, and it never decrypts a snapshot.
    increasing sequences before persistence.
 3. Persist one latest encrypted envelope and a SHA-256 authentication verifier
    in each SQLite Durable Object.
-4. Authenticate each hibernating WebSocket from its first client frame, then
-   send the latest snapshot and broadcast subsequent snapshots.
-5. Cover protocol validation, routing, authentication, replay rejection, and
-   socket delivery with dependency-free Node unit tests.
+4. Authenticate each hibernating WebSocket from its first client frame, keep
+   its `phone` or `desktop` role in the socket attachment, then route encrypted
+   snapshots to phones and bounded refresh control frames to desktops.
+5. Cover protocol validation, routing, authentication, replay rejection,
+   socket delivery, refresh routing, and throttling with dependency-free Node
+   unit tests.
 
 Cloudflare authorization and deployment are intentionally not part of local
 implementation. No account ID, route, token, secret, or deployed endpoint
@@ -34,17 +36,41 @@ to a random 128-bit room ID claims that room. SQLite persists only
 the relay update time. Later publishers must match the verifier and use a
 strictly greater sequence.
 
-The first phone WebSocket frame is:
+The legacy-compatible phone WebSocket authentication frame is:
 
 ```json
 {"type":"auth","version":1,"token":"<32-byte base64url auth key>"}
 ```
 
-After authentication, every relay frame is:
+A client may also state its role explicitly. Desktop control connections must
+use `"role":"desktop"`; omitted roles remain `phone` for existing clients:
+
+```json
+{"type":"auth","version":1,"token":"<32-byte base64url auth key>","role":"desktop"}
+```
+
+After phone authentication, encrypted state is delivered as:
 
 ```json
 {"type":"snapshot","envelope":{"version":1,"roomId":"...","sequence":1,"nonce":"...","ciphertext":"..."}}
 ```
+
+An authenticated phone can request a real desktop rescan with:
+
+```json
+{"type":"refresh_request","version":1,"requestId":"<UUID v4>"}
+```
+
+The relay forwards that unchanged only to authenticated desktop sockets and
+returns one of `forwarded`, `desktop_unavailable`, or `throttled` to the phone:
+
+```json
+{"type":"refresh_result","version":1,"requestId":"<UUID v4>","status":"forwarded"}
+```
+
+`forwarded` confirms routing only. The phone reports success only after it also
+receives and decrypts a snapshot with a sequence greater than the sequence at
+which the request was sent.
 
 The WebSocket is accepted with the Durable Object hibernation API. Authentication
 state, but never the token or verifier, is stored in the socket attachment so it
@@ -59,6 +85,8 @@ pending handshakes.
 - ciphertext: 16 bytes through 32 KiB;
 - publish request: at most 48 KiB and `application/json`;
 - authentication frame: at most 256 UTF-8 bytes;
+- refresh request frame: at most 256 UTF-8 bytes, exact fields, UUID v4;
+- refresh requests: at most one per phone socket every five seconds;
 - sequence: integer from 1 through JavaScript's maximum safe integer;
 - envelopes and authentication frames reject unknown fields;
 - equal or lower sequences return `409 stale_sequence`;
@@ -76,12 +104,13 @@ The unit suite uses only Node's built-in test runner:
 npm.cmd test
 ```
 
-Current local result: 18 tests passed. They cover validation, bounded reads,
+Current local result: 21 tests passed. They cover validation, bounded reads,
 TLS routing, room claiming, authentication failure, replay rejection,
-first-frame WebSocket authentication, and authenticated-only broadcast.
+first-frame WebSocket authentication, role-bound delivery, refresh routing,
+and per-phone-socket throttling.
 
 `npm run check` additionally performs a Wrangler dry-run. The current local
-result is 18/18 tests passed and Wrangler 4.114.0 successfully bundled the
+result is 21/21 tests passed and Wrangler 4.114.0 successfully bundled the
 Worker with the `CODEX_PHONE_ROOMS` Durable Object binding. No production
 deployment is claimed until Cloudflare browser authorization completes.
 

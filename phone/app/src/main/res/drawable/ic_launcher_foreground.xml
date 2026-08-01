@@ -1,25 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp"
-    android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
-    <path
-        android:fillColor="@android:color/transparent"
-        android:pathData="M54,18 A36,36 0,1 1,28,29"
-        android:strokeColor="#FFFFFFFF"
-        android:strokeLineCap="round"
-        android:strokeWidth="6" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M54,49 C46,49 40,56 40,64 C40,72 46,78 54,78 C62,78 68,72 68,64 C68,56 62,49 54,49 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M34,45 C34,40 37,37 41,37 C45,37 48,41 48,46 C48,51 45,54 41,54 C37,54 34,50 34,45 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M47,37 C47,32 50,29 54,29 C58,29 61,32 61,37 C61,42 58,45 54,45 C50,45 47,42 47,37 Z" />
-    <path
-        android:fillColor="#FFFFFFFF"
-        android:pathData="M60,46 C60,41 63,37 67,37 C71,37 74,40 74,45 C74,50 71,54 67,54 C63,54 60,51 60,46 Z" />
-</vector>
+<inset xmlns:android="http://schemas.android.com/apk/res/android"
+    android:drawable="@drawable/codex_cat_logo"
+    android:insetBottom="21dp"
+    android:insetLeft="21dp"
+    android:insetRight="21dp"
+    android:insetTop="21dp" />

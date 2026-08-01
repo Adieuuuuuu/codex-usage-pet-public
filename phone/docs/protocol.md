@@ -69,10 +69,31 @@ AES-256-GCM additional authenticated data is the UTF-8 string:
 ## Relay operations
 
 - `PUT /v1/rooms/<roomId>/snapshot`: desktop publish; bearer authentication.
-- `GET /v1/rooms/<roomId>/events`: phone WebSocket upgrade. The first client
-  frame authenticates the socket; authenticated sockets receive the latest
-  envelope and subsequent `snapshot` frames.
+- `GET /v1/rooms/<roomId>/events`: role-aware WebSocket upgrade. The first
+  client frame authenticates the socket. Omitting `role` preserves the v1 phone
+  behavior; desktop control connections send `role: "desktop"`.
 - `GET /health`: non-secret deployment health check.
+
+## Manual refresh control frames
+
+An authenticated phone sends an exact, bounded frame containing no business
+data:
+
+```json
+{"type":"refresh_request","version":1,"requestId":"<UUID v4>"}
+```
+
+The relay routes it only to authenticated desktop sockets and answers the
+requesting phone with the same request ID and `forwarded`,
+`desktop_unavailable`, or `throttled`. Each phone socket is limited to one
+request per five seconds. Refresh requests and results are not persisted and do
+not change the SQLite schema.
+
+After a forwarded request, the desktop performs a real local rescan, then uses
+the existing AES-256-GCM publisher to emit a higher sequence with a fresh
+nonce. The phone treats refresh as successful only after both the forwarding
+result and that higher sequence are observed; forwarding alone is not success.
+The Android client bounds the attempt to 15 seconds.
 
 The relay rejects non-TLS production endpoints, unknown versions, invalid room
 IDs, oversized bodies, stale sequences, failed authentication, and unsupported

@@ -78,16 +78,77 @@ test("rejects wrong or binary WebSocket authentication frames", async () => {
 
 test("broadcasts a newer snapshot only to authenticated sockets", async () => {
   const authenticated = new FakeSocket();
-  authenticated.serializeAttachment({ authenticated: true });
+  authenticated.serializeAttachment({ authenticated: true, role: "phone" });
+  const desktop = new FakeSocket();
+  desktop.serializeAttachment({ authenticated: true, role: "desktop" });
   const pending = new FakeSocket();
   pending.serializeAttachment({ authenticated: false });
-  const context = new FakeContext([authenticated, pending]);
+  const context = new FakeContext([authenticated, desktop, pending]);
   const handler = createHandler(context, new MemoryStore());
 
   const response = await handler.fetch(publishRequest(TOKEN, 1));
   assert.equal(response.status, 201);
   assert.equal(authenticated.sent.length, 1);
+  assert.equal(desktop.sent.length, 0);
   assert.equal(pending.sent.length, 0);
+});
+
+test("forwards a bounded phone refresh only to a desktop and rate limits it", async () => {
+  const phone = new FakeSocket();
+  phone.serializeAttachment({ authenticated: true, role: "phone" });
+  const desktop = new FakeSocket();
+  desktop.serializeAttachment({ authenticated: true, role: "desktop" });
+  const context = new FakeContext([phone, desktop]);
+  const handler = createHandler(context, new MemoryStore());
+  const first = JSON.stringify({
+    type: "refresh_request",
+    version: 1,
+    requestId: "8d573f92-b480-4cd7-84ad-8eb6ce239318",
+  });
+  const second = JSON.stringify({
+    type: "refresh_request",
+    version: 1,
+    requestId: "d397de29-e688-46aa-a20f-9e53f22efaea",
+  });
+
+  await handler.webSocketMessage(phone, first);
+  await handler.webSocketMessage(phone, second);
+
+  assert.deepEqual(desktop.sent.map(JSON.parse), [JSON.parse(first)]);
+  assert.deepEqual(phone.sent.map(JSON.parse), [
+    {
+      type: "refresh_result",
+      version: 1,
+      requestId: "8d573f92-b480-4cd7-84ad-8eb6ce239318",
+      result: "forwarded",
+    },
+    {
+      type: "refresh_result",
+      version: 1,
+      requestId: "d397de29-e688-46aa-a20f-9e53f22efaea",
+      result: "throttled",
+    },
+  ]);
+});
+
+test("reports when no authenticated desktop can refresh", async () => {
+  const phone = new FakeSocket();
+  phone.serializeAttachment({ authenticated: true, role: "phone" });
+  const handler = createHandler(
+    new FakeContext([phone]),
+    new MemoryStore(),
+  );
+
+  await handler.webSocketMessage(phone, JSON.stringify({
+    type: "refresh_request",
+    version: 1,
+    requestId: "8d573f92-b480-4cd7-84ad-8eb6ce239318",
+  }));
+
+  assert.equal(
+    JSON.parse(phone.sent[0]).result,
+    "desktop_unavailable",
+  );
 });
 
 function createHandler(context, store) {

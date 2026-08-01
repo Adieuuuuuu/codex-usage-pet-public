@@ -28,11 +28,21 @@ public final class NotificationPublisher {
     static final long ALERT_TIMEOUT_MS = 10_000L;
     private static final String QUIET_CHANNEL_ID = "codex_task_status_v2";
     private static final String ALERT_CHANNEL_ID = "codex_task_alerts_v2";
+    static final String LEGACY_QUIET_CHANNEL_ID = "codex_task_status_v1";
+    static final String LEGACY_ALERT_CHANNEL_ID = "codex_task_alerts_v1";
     private static final String SILENT_STATUS_GROUP = "codex_status_silent";
     private static final int TOGGLE_REQUEST_CODE = 2209;
     private static final int CONTENT_REQUEST_CODE = 2210;
 
     private NotificationPublisher() {
+    }
+
+    public static void initializeChannels(Context context) {
+        NotificationManager manager =
+                (NotificationManager) context.getSystemService(
+                        Context.NOTIFICATION_SERVICE
+                );
+        createChannels(context, manager);
     }
 
     public static boolean publish(
@@ -384,6 +394,9 @@ public final class NotificationPublisher {
     }
 
     private static void createChannels(Context context, NotificationManager manager) {
+        manager.deleteNotificationChannel(LEGACY_QUIET_CHANNEL_ID);
+        manager.deleteNotificationChannel(LEGACY_ALERT_CHANNEL_ID);
+
         NotificationChannel quietChannel = new NotificationChannel(
                 QUIET_CHANNEL_ID,
                 context.getString(R.string.notification_quiet_channel_name),

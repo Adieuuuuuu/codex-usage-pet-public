@@ -93,6 +93,38 @@ public final class AllTasksSurfaceContractTest {
         assertTrue(Files.exists(sourcePath(
                 "src/main/res/drawable/ic_launcher_foreground.xml"
         )));
+
+        Document launcher = parse(
+                "src/main/res/mipmap-anydpi-v26/ic_launcher.xml"
+        );
+        Element adaptiveIcon = launcher.getDocumentElement();
+        assertEquals(
+                "@color/launcher_background",
+                androidAttribute(
+                        adaptiveIcon.getElementsByTagName("background").item(0),
+                        "drawable"
+                )
+        );
+        assertEquals(
+                "@drawable/ic_launcher_foreground",
+                androidAttribute(
+                        adaptiveIcon.getElementsByTagName("foreground").item(0),
+                        "drawable"
+                )
+        );
+
+        Element foreground = parse(
+                "src/main/res/drawable/ic_launcher_foreground.xml"
+        ).getDocumentElement();
+        assertEquals("inset", foreground.getTagName());
+        assertEquals(
+                "@drawable/codex_cat_logo",
+                androidAttribute(foreground, "drawable")
+        );
+        assertEquals("21dp", androidAttribute(foreground, "insetLeft"));
+        assertEquals("21dp", androidAttribute(foreground, "insetTop"));
+        assertEquals("21dp", androidAttribute(foreground, "insetRight"));
+        assertEquals("21dp", androidAttribute(foreground, "insetBottom"));
     }
 
     private static String stringValue(Document document, String name) {

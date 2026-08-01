@@ -13,6 +13,7 @@ import android.view.DisplayCutout;
 import android.view.View;
 import android.view.WindowInsets;
 import android.widget.EditText;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
@@ -25,6 +26,7 @@ public final class MainActivity extends Activity {
     private TextView taskCount;
     private TextView taskEmpty;
     private LinearLayout taskList;
+    private Button refresh;
     private final SharedPreferences.OnSharedPreferenceChangeListener
             stateListener = (preferences, key) -> renderState();
 
@@ -38,6 +40,7 @@ public final class MainActivity extends Activity {
         taskCount = findViewById(R.id.activity_task_count);
         taskEmpty = findViewById(R.id.activity_task_empty);
         taskList = findViewById(R.id.activity_task_list);
+        refresh = findViewById(R.id.refresh);
 
         findViewById(R.id.connect).setOnClickListener(view ->
                 connect(pairingCode.getText().toString()));
@@ -49,7 +52,10 @@ public final class MainActivity extends Activity {
             status.setText(R.string.pairing_disconnected);
             renderTasks();
         });
+        refresh.setOnClickListener(view ->
+                SyncForegroundService.requestRefresh(this));
 
+        NotificationPublisher.initializeChannels(this);
         requestNotificationPermissionIfNeeded();
         handlePairingIntent(getIntent());
         if (SyncStateStore.isSyncEnabled(this)) {
@@ -117,6 +123,22 @@ public final class MainActivity extends Activity {
 
     private void updateStateStatus() {
         if (SyncStateStore.isSyncEnabled(this)) {
+            String refreshState = SyncStateStore.refreshState(this);
+            refresh.setEnabled(
+                    !"requesting".equals(refreshState)
+                            && !"refreshing".equals(refreshState)
+            );
+            refresh.setText(
+                    "requesting".equals(refreshState)
+                            || "refreshing".equals(refreshState)
+                            ? R.string.refreshing
+                            : R.string.refresh
+            );
+            int refreshStatus = refreshStatus(refreshState);
+            if (refreshStatus != 0) {
+                status.setText(refreshStatus);
+                return;
+            }
             status.setText(getString(
                     R.string.sync_status,
                     localizedConnectionState(
@@ -125,7 +147,27 @@ public final class MainActivity extends Activity {
             ));
             return;
         }
+        refresh.setEnabled(false);
+        refresh.setText(R.string.refresh);
         status.setText(R.string.sync_unpaired);
+    }
+
+    private int refreshStatus(String state) {
+        switch (state) {
+            case "requesting":
+            case "refreshing":
+                return R.string.refresh_status_refreshing;
+            case "success":
+                return R.string.refresh_status_success;
+            case "desktop_unavailable":
+                return R.string.refresh_status_desktop_unavailable;
+            case "throttled":
+                return R.string.refresh_status_throttled;
+            case "timeout":
+                return R.string.refresh_status_timeout;
+            default:
+                return 0;
+        }
     }
 
     private void renderState() {

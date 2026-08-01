@@ -11,6 +11,7 @@ public final class SyncStateStore {
     private static final String SYNC_ENABLED = "sync_enabled";
     private static final String CONNECTION_STATE = "connection_state";
     private static final String SNAPSHOT_SEQUENCE = "snapshot_sequence";
+    private static final String REFRESH_STATE = "refresh_state";
 
     private SyncStateStore() {
     }
@@ -19,6 +20,7 @@ public final class SyncStateStore {
         PairingBundle.parse(pairingUri);
         new SecureStore(context).put(PAIRING, pairingUri.trim());
         preferences(context).edit().putBoolean(SYNC_ENABLED, true).apply();
+        setRefreshState(context, "idle");
     }
 
     public static PairingBundle loadPairing(Context context) {
@@ -41,6 +43,7 @@ public final class SyncStateStore {
         preferences(context).edit()
                 .putBoolean(SYNC_ENABLED, false)
                 .putString(CONNECTION_STATE, "unpaired")
+                .putString(REFRESH_STATE, "idle")
                 .remove(SNAPSHOT_SEQUENCE)
                 .apply();
     }
@@ -91,6 +94,14 @@ public final class SyncStateStore {
 
     public static String connectionState(Context context) {
         return preferences(context).getString(CONNECTION_STATE, "unpaired");
+    }
+
+    public static void setRefreshState(Context context, String state) {
+        preferences(context).edit().putString(REFRESH_STATE, state).apply();
+    }
+
+    public static String refreshState(Context context) {
+        return preferences(context).getString(REFRESH_STATE, "idle");
     }
 
     public static void registerListener(

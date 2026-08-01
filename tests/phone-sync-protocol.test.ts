@@ -10,6 +10,7 @@ import {
   encryptPhoneSnapshot,
   generatePhonePairing,
   phoneSnapshotContentKey,
+  phoneEventsUrl,
   projectPhoneSnapshot,
 } from "../src/services/phone-sync-protocol.ts";
 
@@ -122,6 +123,14 @@ test("pairing URI round-trips and derives separate stable keys", () => {
   assert.notEqual(
     first.authToken,
     first.encryptionKey.toString("base64url"),
+  );
+});
+
+test("builds the paired room WebSocket events URL", () => {
+  const pairing = generatePhonePairing("https://relay.example.workers.dev");
+  assert.equal(
+    phoneEventsUrl(pairing),
+    `wss://relay.example.workers.dev/v1/rooms/${pairing.roomId}/events`,
   );
 });
 

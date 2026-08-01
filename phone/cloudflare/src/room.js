@@ -8,15 +8,18 @@ import {
   jsonResponse,
   parseBearer,
   readBoundedJson,
+  refreshResultFrame,
   snapshotFrame,
   validateAuthFrame,
   validateEnvelope,
+  validateRefreshRequestFrame,
 } from "./protocol.js";
 import { SqliteRoomStore } from "./store.js";
 import { matchRelayPath } from "./worker.js";
 
 const MAX_AUTHENTICATED_SOCKETS = 4;
 const MAX_PENDING_SOCKETS = 4;
+const REFRESH_COOLDOWN_MS = 5_000;
 
 export class RoomHandler {
   constructor(ctx, env, options = {}) {
@@ -93,7 +96,7 @@ export class RoomHandler {
       throw new RelayError(409, "stale_sequence");
     }
 
-    this.broadcast(snapshotFrame(envelopeJson));
+    this.broadcast(snapshotFrame(envelopeJson), "phone");
     return jsonResponse(result.decision === "claim" ? 201 : 200, {
       ok: true,
       sequence: envelope.sequence,
@@ -139,7 +142,7 @@ export class RoomHandler {
   async webSocketMessage(socket, message) {
     const attachment = getAttachment(socket);
     if (attachment.authenticated === true) {
-      socket.close(1008, "unexpected frame");
+      this.handleAuthenticatedMessage(socket, message, attachment);
       return;
     }
     if (attachment.authenticating === true) {
@@ -157,8 +160,8 @@ export class RoomHandler {
     });
 
     try {
-      const token = validateAuthFrame(message);
-      const authHash = await hashAuthToken(token);
+      const auth = validateAuthFrame(message);
+      const authHash = await hashAuthToken(auth.token);
       const state = this.store.getState();
 
       if (state === null || !constantTimeEqual(state.authHash, authHash)) {
@@ -169,30 +172,83 @@ export class RoomHandler {
       socket.serializeAttachment({
         authenticated: true,
         authenticating: false,
+        role: auth.role,
         connectedAt: attachment.connectedAt ?? this.now(),
       });
-      socket.send(snapshotFrame(state.envelope));
+      if (auth.role === "phone") {
+        socket.send(snapshotFrame(state.envelope));
+      } else {
+        socket.send('{"type":"ready","version":1,"role":"desktop"}');
+      }
     } catch {
       socket.close(1008, "authentication failed");
     }
+  }
+
+  handleAuthenticatedMessage(socket, message, attachment) {
+    if (attachment.role !== "phone" || typeof message !== "string") {
+      socket.close(1008, "unexpected frame");
+      return;
+    }
+
+    let request;
+    try {
+      request = validateRefreshRequestFrame(message);
+    } catch {
+      socket.close(1008, "invalid refresh request");
+      return;
+    }
+
+    const now = this.now();
+    if (
+      Number.isFinite(attachment.lastRefreshAt) &&
+      now - attachment.lastRefreshAt < REFRESH_COOLDOWN_MS
+    ) {
+      socket.send(refreshResultFrame(request.requestId, "throttled"));
+      return;
+    }
+
+    socket.serializeAttachment({
+      ...attachment,
+      lastRefreshAt: now,
+    });
+    const forwarded = this.broadcast(
+      JSON.stringify(request),
+      "desktop",
+    );
+    socket.send(refreshResultFrame(
+      request.requestId,
+      forwarded > 0 ? "forwarded" : "desktop_unavailable",
+    ));
   }
 
   webSocketError(socket) {
     socket.close(1011, "socket error");
   }
 
-  broadcast(frame) {
+  broadcast(frame, role = null) {
+    let delivered = 0;
     for (const socket of this.ctx.getWebSockets()) {
-      if (getAttachment(socket).authenticated !== true) {
+      const attachment = getAttachment(socket);
+      if (
+        attachment.authenticated !== true ||
+        (role !== null && socketRole(attachment) !== role)
+      ) {
         continue;
       }
       try {
         socket.send(frame);
+        delivered += 1;
       } catch {
         socket.close(1011, "delivery failed");
       }
     }
+    return delivered;
   }
+}
+
+function socketRole(attachment) {
+  return attachment.role === "desktop" ? "desktop" : "phone";
 }
 
 function getAttachment(socket) {
