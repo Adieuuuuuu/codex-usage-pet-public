@@ -40,10 +40,13 @@ privacy, task semantics, and end-to-end acceptance must change atomically.
 When the desktop is routed through OpenCodex, the monitor reads the fresh local
 `codex-quota-cache.json` main-account weekly window. Its `weeklyPercent` value
 is treated as used percentage and converted to remaining percentage for the
-display. The rollout `token_count.rate_limits` value remains a fallback only
-for native Codex. When OpenCodex is configured but its cache is missing,
-invalid, stale, or reset, the display stays unavailable until a fresh cache is
-written rather than showing a fabricated 100% remaining value.
+display. The desktop force-refreshes that quota through OpenCodex's official
+CLI on startup, Windows resume, and every four hours while running. The command
+uses OpenCodex's own management authentication and does not expose credentials
+to Usage Pet. A valid cache older than six hours remains visible as the last
+trusted percentage with a stale label while refresh is pending. The rollout
+`token_count.rate_limits` value remains a fallback only for native Codex and
+can never replace an OpenCodex quota with a fabricated 100% remaining value.
 
 ## Compatibility contract
 

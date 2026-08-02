@@ -283,10 +283,18 @@ const renderUsage = (nextSnapshot: AppSnapshot): void => {
     );
     remainingValue.textContent = String(remainingPercent);
     setRemainingProgress(remainingPercent);
-    showResetDateFallback("待刷新", "额度已重置");
-    usageCapsule.title = `上次读取 ${syncFormatter.format(
-      new Date(usage.weekly.capturedAt),
-    )}；额度窗口已重置，等待 Codex 写入新数据`;
+    const cacheStale = usage.weekly.stale === true;
+    showResetDateFallback(
+      "待刷新",
+      cacheStale ? "上次可信值" : "额度已重置",
+    );
+    usageCapsule.title = cacheStale
+      ? `当前显示上次可信值；${syncFormatter.format(
+          new Date(usage.weekly.capturedAt),
+        )} 读取，正在刷新 OpenCodex 额度`
+      : `上次读取 ${syncFormatter.format(
+          new Date(usage.weekly.capturedAt),
+        )}；额度窗口已重置，等待 Codex 写入新数据`;
     return;
   }
 

@@ -18,6 +18,7 @@ export interface UsageWindowSnapshot {
   resetsAt: number;
   capturedAt: string;
   source: "rollout" | "opencodex-quota-cache";
+  stale?: boolean;
 }
 
 export interface UsageSnapshot {

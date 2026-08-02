@@ -36,6 +36,10 @@ import { CodexMonitor } from "../services/codex-monitor.ts";
 import { HookEventStore } from "../services/hook-event-store.ts";
 import { readOpenCodexQuota } from "../services/opencodex-quota.ts";
 import {
+  OpenCodexQuotaRefresher,
+  OPENCODEX_QUOTA_REFRESH_INTERVAL_MS,
+} from "../services/opencodex-quota-refresh.ts";
+import {
   PetPackRegistry,
   type ResolvedPetPack,
 } from "../services/pet-registry.ts";
@@ -97,6 +101,8 @@ let phoneRelayProxy: string | null = null;
 let pairingClipboardTimer: NodeJS.Timeout | null = null;
 let copiedPairingCode: string | null = null;
 let resumeRecovery: Promise<void> | null = null;
+let refreshOpenCodexQuotaCache: (() => Promise<boolean>) | null = null;
+let openCodexQuotaRefreshTimer: NodeJS.Timeout | null = null;
 let tray: Tray | null = null;
 let quitting = false;
 
@@ -287,9 +293,11 @@ const recoverAfterSystemResume = (): void => {
   }
   const activeMonitor = monitor;
   const activePublisher = phoneSyncPublisher;
-  const recovery = activeMonitor
-    .refreshNow(true)
-    .then(() => activePublisher.recover(activeMonitor.snapshot))
+  const recovery = (async () => {
+    await refreshOpenCodexQuotaCache?.();
+    await activeMonitor.refreshNow(true);
+    await activePublisher.recover(activeMonitor.snapshot);
+  })()
     .finally(() => {
       if (resumeRecovery === recovery) {
         resumeRecovery = null;
@@ -809,6 +817,13 @@ const bootstrap = async (): Promise<void> => {
     opencodexHome,
     "codex-quota-cache.json",
   );
+  const isOpenCodexConfigured = (): boolean =>
+    existsSync(opencodexQuotaPath);
+  const opencodexQuotaRefresher = new OpenCodexQuotaRefresher();
+  refreshOpenCodexQuotaCache = () =>
+    isOpenCodexConfigured()
+      ? opencodexQuotaRefresher.refresh()
+      : Promise.resolve(false);
   const userData = app.getPath("userData");
   const packagedPetRoot = app.isPackaged
     ? join(process.resourcesPath, "pets")
@@ -845,7 +860,7 @@ const bootstrap = async (): Promise<void> => {
     undefined,
     preferences.value.reviewAcknowledgements,
     (now) => readOpenCodexQuota(opencodexQuotaPath, now),
-    () => existsSync(opencodexQuotaPath),
+    isOpenCodexConfigured,
   );
   try {
     const environmentEndpoint =
@@ -933,6 +948,11 @@ const bootstrap = async (): Promise<void> => {
   powerMonitor.on("resume", recoverAfterSystemResume);
   await monitor.start();
   phoneSyncPublisher.update(monitor.snapshot);
+  void refreshOpenCodexQuotaCache().then(() => monitor?.refreshNow());
+  openCodexQuotaRefreshTimer = setInterval(() => {
+    void refreshOpenCodexQuotaCache?.().then(() => monitor?.refreshNow());
+  }, OPENCODEX_QUOTA_REFRESH_INTERVAL_MS);
+  openCodexQuotaRefreshTimer.unref();
 
   if (!app.isPackaged && process.argv.includes("--capture-smoke")) {
     setTimeout(() => {
@@ -972,6 +992,11 @@ if (!hasSingleInstanceLock) {
     quitting = true;
     controller?.setQuitting();
     powerMonitor.removeListener("resume", recoverAfterSystemResume);
+    if (openCodexQuotaRefreshTimer !== null) {
+      clearInterval(openCodexQuotaRefreshTimer);
+      openCodexQuotaRefreshTimer = null;
+    }
+    refreshOpenCodexQuotaCache = null;
     monitor?.stop();
     phoneSyncPublisher?.stop();
     phoneSyncPublisher = null;

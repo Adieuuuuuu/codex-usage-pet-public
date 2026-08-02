@@ -243,11 +243,14 @@ export const evaluateWeeklyRateLimit = (
     };
   }
 
-  if (!isWeeklyRateLimitFresh(snapshot, now)) {
+  if (snapshot.stale === true || !isWeeklyRateLimitFresh(snapshot, now)) {
     return {
       status: "stale",
       weekly: snapshot,
-      reason: "The captured rate-limit window has reset.",
+      reason:
+        snapshot.stale === true
+          ? "The OpenCodex quota cache is waiting for refresh."
+          : "The captured rate-limit window has reset.",
     };
   }
 

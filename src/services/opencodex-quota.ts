@@ -40,8 +40,8 @@ export const readOpenCodexQuota = (
     weeklyResetAt === null ||
     weeklyResetAt <= Math.floor(now / 1_000) ||
     updatedAt === null ||
-    updatedAt > now + 5 * 60 * 1_000 ||
-    now - updatedAt > OPENCODEX_QUOTA_CACHE_MAX_AGE_MS
+    updatedAt <= 0 ||
+    updatedAt > now + 5 * 60 * 1_000
   ) {
     return null;
   }
@@ -53,5 +53,8 @@ export const readOpenCodexQuota = (
     resetsAt: weeklyResetAt,
     capturedAt: new Date(updatedAt).toISOString(),
     source: "opencodex-quota-cache",
+    ...(now - updatedAt > OPENCODEX_QUOTA_CACHE_MAX_AGE_MS
+      ? { stale: true }
+      : {}),
   };
 };

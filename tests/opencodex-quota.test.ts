@@ -42,7 +42,7 @@ test("converts OpenCodex main-account used percent into remaining weekly usage",
   });
 });
 
-test("ignores stale, reset, malformed, and non-main OpenCodex quota data", async () => {
+test("keeps stale OpenCodex quota as the last trusted value", async () => {
   const root = await mkdtemp(
     join(tmpdir(), "usage-pet-opencodex-quota-invalid-"),
   );
@@ -66,6 +66,43 @@ test("ignores stale, reset, malformed, and non-main OpenCodex quota data", async
           weeklyPercent: 2,
           weeklyResetAt: resetAt,
           updatedAt: now - OPENCODEX_QUOTA_CACHE_MAX_AGE_MS - 1,
+        },
+      },
+    }),
+    "utf8",
+  );
+  assert.deepEqual(readOpenCodexQuota(cachePath, now), {
+    remainingPercent: 98,
+    usedPercent: 2,
+    windowDurationMins: 10_080,
+    resetsAt: resetAt,
+    capturedAt: new Date(
+      now - OPENCODEX_QUOTA_CACHE_MAX_AGE_MS - 1,
+    ).toISOString(),
+    source: "opencodex-quota-cache",
+    stale: true,
+  });
+});
+
+test("ignores reset, malformed, and non-main OpenCodex quota data", async () => {
+  const root = await mkdtemp(
+    join(tmpdir(), "usage-pet-opencodex-quota-invalid-"),
+  );
+  const cachePath = join(root, "codex-quota-cache.json");
+  const now = Date.parse("2026-08-08T03:33:12.000Z");
+  await writeFile(
+    cachePath,
+    JSON.stringify({
+      quotas: {
+        account_2: {
+          weeklyPercent: 2,
+          weeklyResetAt: Math.floor(now / 1_000) + 60,
+          updatedAt: now,
+        },
+        __main__: {
+          weeklyPercent: 2,
+          weeklyResetAt: Math.floor(now / 1_000) - 1,
+          updatedAt: now,
         },
       },
     }),

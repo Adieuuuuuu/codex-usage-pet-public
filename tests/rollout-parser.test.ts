@@ -263,6 +263,24 @@ test("marks an elapsed reset as stale without fabricating a fresh 100 percent", 
   assert.equal(snapshot.remainingPercent, 63);
 });
 
+test("marks an old OpenCodex cache value as stale while preserving its percent", () => {
+  const snapshot = {
+    remainingPercent: 96,
+    usedPercent: 4,
+    windowDurationMins: 10_080,
+    resetsAt: 1_786_159_991,
+    capturedAt: "2026-08-01T10:00:00.000Z",
+    source: "opencodex-quota-cache" as const,
+    stale: true,
+  };
+
+  assert.deepEqual(evaluateWeeklyRateLimit(snapshot, 1_785_625_000_000), {
+    status: "stale",
+    weekly: snapshot,
+    reason: "The OpenCodex quota cache is waiting for refresh.",
+  });
+});
+
 test("returns empty metadata for malformed or unrelated lines", () => {
   assert.deepEqual(parseRolloutLine('{"incomplete":'), {
     signals: [],
