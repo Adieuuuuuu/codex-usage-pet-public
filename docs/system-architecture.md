@@ -37,8 +37,15 @@ privacy, task semantics, and end-to-end acceptance must change atomically.
 
 ## OpenCodex quota compatibility
 
-When the desktop is routed through OpenCodex, the monitor reads the fresh local
-`codex-quota-cache.json` main-account weekly window. Its `weeklyPercent` value
+The desktop treats OpenCodex as active only when the currently selected Codex
+provider explicitly routes to the local OpenCodex `/v1` endpoint. A historical
+quota cache, an installed CLI, or a stopped proxy does not activate this mode.
+Native and external-provider routes use the newest native rollout usage and do
+not invoke the OpenCodex quota refresh command.
+
+When the desktop is actively routed through OpenCodex, the monitor reads the
+fresh local `codex-quota-cache.json` main-account weekly window. Its
+`weeklyPercent` value
 is treated as used percentage and converted to remaining percentage for the
 display. The desktop force-refreshes that quota through OpenCodex's official
 CLI on startup, Windows resume, and every four hours while running. The command

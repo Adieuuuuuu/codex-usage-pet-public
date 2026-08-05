@@ -1,4 +1,3 @@
-import { existsSync } from "node:fs";
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join, resolve } from "node:path";
@@ -34,7 +33,10 @@ import {
 } from "../shared/contracts.ts";
 import { CodexMonitor } from "../services/codex-monitor.ts";
 import { HookEventStore } from "../services/hook-event-store.ts";
-import { readOpenCodexQuota } from "../services/opencodex-quota.ts";
+import {
+  isOpenCodexRouteActive,
+  readActiveOpenCodexQuota,
+} from "../services/opencodex-routing.ts";
 import {
   OpenCodexQuotaRefresher,
   OPENCODEX_QUOTA_REFRESH_INTERVAL_MS,
@@ -817,8 +819,9 @@ const bootstrap = async (): Promise<void> => {
     opencodexHome,
     "codex-quota-cache.json",
   );
+  const codexConfigPath = join(codexHome, "config.toml");
   const isOpenCodexConfigured = (): boolean =>
-    existsSync(opencodexQuotaPath);
+    isOpenCodexRouteActive(codexConfigPath);
   const opencodexQuotaRefresher = new OpenCodexQuotaRefresher();
   refreshOpenCodexQuotaCache = () =>
     isOpenCodexConfigured()
@@ -859,7 +862,12 @@ const bootstrap = async (): Promise<void> => {
     undefined,
     undefined,
     preferences.value.reviewAcknowledgements,
-    (now) => readOpenCodexQuota(opencodexQuotaPath, now),
+    (now) =>
+      readActiveOpenCodexQuota(
+        codexConfigPath,
+        opencodexQuotaPath,
+        now,
+      ),
     isOpenCodexConfigured,
   );
   try {
